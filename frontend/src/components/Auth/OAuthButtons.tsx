@@ -1,6 +1,10 @@
+import { useI18n } from '../../i18n';
+
 const CLOUD_URL = 'http://localhost:8080';
 
 export default function OAuthButtons() {
+  const { t } = useI18n();
+
   const handleOAuth = (provider: string) => {
     window.open(`${CLOUD_URL}/api/auth/oauth/${provider}`, '_blank');
   };
@@ -8,10 +12,10 @@ export default function OAuthButtons() {
   return (
     <div className="oauth-buttons">
       <button className="oauth-btn" onClick={() => handleOAuth('google')}>
-        Continue with Google
+        {t('auth.google')}
       </button>
       <button className="oauth-btn" onClick={() => handleOAuth('github')}>
-        Continue with GitHub
+        {t('auth.github')}
       </button>
 
       <style>{`

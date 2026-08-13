@@ -69,6 +69,28 @@ export const en = {
   'lang.ru': 'Русский',
   'lang.kk': 'Қазақша',
 
+  // Auth
+  'auth.signIn': 'Sign in to your account',
+  'auth.createAccount': 'Create an account',
+  'auth.email': 'Email',
+  'auth.password': 'Password',
+  'auth.signInBtn': 'Sign In',
+  'auth.register': 'Register',
+  'auth.or': 'or',
+  'auth.google': 'Continue with Google',
+  'auth.github': 'Continue with GitHub',
+  'auth.hasAccount': 'Already have an account? Sign in',
+  'auth.noAccount': "Don't have an account? Register",
+  'auth.skip': 'Skip and use offline',
+  'auth.connectionFailed': 'Connection failed. Check if cloud server is running.',
+
+  // Sync
+  'sync.title': 'Cloud Sync',
+  'sync.push': 'Push to Cloud',
+  'sync.pull': 'Pull from Cloud',
+  'sync.lastSync': 'Last sync',
+  'sync.notConnected': 'Sign in to enable cloud sync',
+
   // Common
   'common.cancel': 'Cancel',
   'common.save': 'Save',

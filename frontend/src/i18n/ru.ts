@@ -69,6 +69,28 @@ export const ru = {
   'lang.ru': 'Русский',
   'lang.kk': 'Қазақша',
 
+  // Auth
+  'auth.signIn': 'Войдите в аккаунт',
+  'auth.createAccount': 'Создать аккаунт',
+  'auth.email': 'Email',
+  'auth.password': 'Пароль',
+  'auth.signInBtn': 'Войти',
+  'auth.register': 'Зарегистрироваться',
+  'auth.or': 'или',
+  'auth.google': 'Продолжить с Google',
+  'auth.github': 'Продолжить с GitHub',
+  'auth.hasAccount': 'Уже есть аккаунт? Войти',
+  'auth.noAccount': 'Нет аккаунта? Зарегистрироваться',
+  'auth.skip': 'Пропустить и работать офлайн',
+  'auth.connectionFailed': 'Ошибка подключения. Проверьте облачный сервер.',
+
+  // Sync
+  'sync.title': 'Облачная синхронизация',
+  'sync.push': 'Отправить в облако',
+  'sync.pull': 'Загрузить из облака',
+  'sync.lastSync': 'Последняя синхронизация',
+  'sync.notConnected': 'Войдите для облачной синхронизации',
+
   // Common
   'common.cancel': 'Отмена',
   'common.save': 'Сохранить',

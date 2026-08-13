@@ -13,11 +13,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (token: string) => {
     localStorage.setItem('shellius_token', token);
+    localStorage.removeItem('shellius_auth_skipped');
     set({ token, isAuthenticated: true });
   },
 
   logout: () => {
     localStorage.removeItem('shellius_token');
+    localStorage.removeItem('shellius_email');
+    localStorage.removeItem('shellius_auth_skipped');
     set({ token: null, isAuthenticated: false });
   },
 }));

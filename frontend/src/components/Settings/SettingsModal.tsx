@@ -10,7 +10,8 @@ interface SettingsModalProps {
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { t, locale, setLocale } = useI18n();
   const logout = useAuthStore((s) => s.logout);
-  const [activeSection, setActiveSection] = useState<'profile' | 'language'>('profile');
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [activeSection, setActiveSection] = useState<'profile' | 'language' | 'sync'>('profile');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleLogout = () => {
@@ -53,6 +54,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               onClick={() => setActiveSection('language')}
             >
               {t('settings.language')}
+            </button>
+            <button
+              className={`settings-nav-item ${activeSection === 'sync' ? 'active' : ''}`}
+              onClick={() => setActiveSection('sync')}
+            >
+              {t('sync.title')}
             </button>
           </div>
 
@@ -120,6 +127,28 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeSection === 'sync' && (
+              <div className="settings-section">
+                {isAuthenticated ? (
+                  <div className="sync-panel">
+                    <p className="settings-label">{t('sync.title')}</p>
+                    <div className="settings-actions">
+                      <button className="settings-btn" onClick={() => {/* TODO: trigger sync push */}}>
+                        {t('sync.push')}
+                      </button>
+                      <button className="settings-btn" onClick={() => {/* TODO: trigger sync pull */}}>
+                        {t('sync.pull')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="sync-not-connected">
+                    <p className="settings-label">{t('sync.notConnected')}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

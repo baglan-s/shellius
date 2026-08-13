@@ -69,6 +69,28 @@ export const kk = {
   'lang.ru': 'Русский',
   'lang.kk': 'Қазақша',
 
+  // Auth
+  'auth.signIn': 'Аккаунтқа кіріңіз',
+  'auth.createAccount': 'Аккаунт құру',
+  'auth.email': 'Email',
+  'auth.password': 'Құпия сөз',
+  'auth.signInBtn': 'Кіру',
+  'auth.register': 'Тіркелу',
+  'auth.or': 'немесе',
+  'auth.google': 'Google арқылы жалғастыру',
+  'auth.github': 'GitHub арқылы жалғастыру',
+  'auth.hasAccount': 'Аккаунт бар ма? Кіру',
+  'auth.noAccount': 'Аккаунт жоқ па? Тіркелу',
+  'auth.skip': 'Өткізіп жіберу және офлайн жұмыс істеу',
+  'auth.connectionFailed': 'Қосылу қатесі. Бұлттық серверді тексеріңіз.',
+
+  // Sync
+  'sync.title': 'Бұлттық синхрондау',
+  'sync.push': 'Бұлтқа жіберу',
+  'sync.pull': 'Бұлттан жүктеу',
+  'sync.lastSync': 'Соңғы синхрондау',
+  'sync.notConnected': 'Бұлттық синхрондау үшін кіріңіз',
+
   // Common
   'common.cancel': 'Болдырмау',
   'common.save': 'Сақтау',
