@@ -28,10 +28,21 @@ export default function HostList({ onConnect }: HostListProps) {
               onClick={() => selectHost(host.id)}
               onDoubleClick={() => onConnect(host)}
             >
-              <span className="host-label">{host.label}</span>
-              <span className="host-addr">
-                {host.username}@{host.hostname}:{host.port}
-              </span>
+              <div className="host-info">
+                <span className="host-label">{host.label}</span>
+                <span className="host-addr">
+                  {host.username}@{host.hostname}:{host.port}
+                </span>
+              </div>
+              <button
+                className="host-connect-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConnect(host);
+                }}
+              >
+                Connect
+              </button>
             </div>
           ))}
         </div>
@@ -56,13 +67,27 @@ export default function HostList({ onConnect }: HostListProps) {
           border-radius: var(--radius);
           cursor: pointer;
           display: flex;
-          flex-direction: column;
-          gap: 2px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
         }
         .host-item:hover { background: var(--bg-surface); }
+        .host-item:hover .host-connect-btn { opacity: 1; }
         .host-item.selected { background: var(--bg-surface); border-left: 2px solid var(--accent); }
+        .host-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .host-label { font-size: 14px; }
-        .host-addr { font-size: 12px; color: var(--text-secondary); }
+        .host-addr { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .host-connect-btn {
+          opacity: 0;
+          padding: 4px 10px;
+          font-size: 11px;
+          background: var(--accent);
+          color: var(--bg-primary);
+          border-radius: 4px;
+          flex-shrink: 0;
+          transition: opacity 0.15s;
+        }
+        .host-connect-btn:hover { background: var(--accent-hover); }
         .host-empty { color: var(--text-secondary); font-size: 13px; text-align: center; padding: 20px; }
       `}</style>
     </div>

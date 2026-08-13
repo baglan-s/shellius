@@ -22,31 +22,35 @@ export default function QuickConnect({ onConnect }: QuickConnectProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="quick-connect">
+    <form onSubmit={handleSubmit} className="quick-connect" autoComplete="off">
       <h3 className="qc-title">Quick Connect</h3>
       <input
         placeholder="Hostname / IP"
         value={hostname}
         onChange={(e) => setHostname(e.target.value)}
         required
+        autoComplete="off"
       />
       <input
         type="number"
         placeholder="Port"
         value={port}
         onChange={(e) => setPort(Number(e.target.value))}
+        autoComplete="off"
       />
       <input
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         required
+        autoComplete="off"
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        autoComplete="new-password"
       />
       <button type="submit" className="primary" style={{ width: '100%' }}>
         Connect

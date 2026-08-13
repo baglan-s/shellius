@@ -29,7 +29,7 @@ export default function MainArea() {
   return (
     <div className="main-area">
       <TabBar />
-      <div className="terminal-area">
+      <div className={`terminal-area ${sessions.length > 0 ? 'has-session' : ''}`}>
         {sessions.map((session) => (
           <div
             key={session.id}
@@ -65,6 +65,10 @@ export default function MainArea() {
           align-items: center;
           justify-content: center;
           overflow: hidden;
+        }
+        .terminal-area.has-session {
+          align-items: stretch;
+          justify-content: stretch;
         }
         .empty-state {
           text-align: center;

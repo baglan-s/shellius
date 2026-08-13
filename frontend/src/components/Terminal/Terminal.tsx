@@ -119,7 +119,6 @@ export default function TerminalView({ sessionId }: TerminalViewProps) {
       style={{
         width: '100%',
         height: '100%',
-        padding: '4px',
         background: '#1e1e2e',
       }}
     />

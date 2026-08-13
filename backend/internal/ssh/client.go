@@ -15,6 +15,7 @@ type ClientConfig struct {
 	AuthMethod string
 	Password   string
 	PrivateKey []byte
+	Passphrase string
 }
 
 type Client struct {
@@ -65,7 +66,13 @@ func (c *Client) buildAuth() ([]ssh.AuthMethod, error) {
 	case "password":
 		return []ssh.AuthMethod{ssh.Password(c.config.Password)}, nil
 	case "key":
-		signer, err := ssh.ParsePrivateKey(c.config.PrivateKey)
+		var signer ssh.Signer
+		var err error
+		if c.config.Passphrase != "" {
+			signer, err = ssh.ParsePrivateKeyWithPassphrase(c.config.PrivateKey, []byte(c.config.Passphrase))
+		} else {
+			signer, err = ssh.ParsePrivateKey(c.config.PrivateKey)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse private key: %w", err)
 		}

@@ -5,8 +5,9 @@ import { useSessionStore } from '../../stores/sessionStore';
 import HostList from '../HostManager/HostList';
 import HostForm from '../HostManager/HostForm';
 import QuickConnect from '../HostManager/QuickConnect';
+import KeyManager from '../KeyManager/KeyManager';
 
-type Tab = 'hosts' | 'quick' | 'snippets' | 'vault';
+type Tab = 'hosts' | 'quick' | 'keys' | 'snippets' | 'vault';
 
 export default function Sidebar() {
   const [activeTab, setActiveTab] = useState<Tab>('hosts');
@@ -85,6 +86,8 @@ export default function Sidebar() {
       port: number;
       username: string;
       authMethod: string;
+      password?: string;
+      keyId?: string;
       groupName: string;
     }) => {
       const msgId = `create-host-${Date.now()}`;
@@ -97,6 +100,8 @@ export default function Sidebar() {
           port: host.port,
           username: host.username,
           auth_method: host.authMethod,
+          password_enc: host.password,
+          key_id: host.keyId,
           group_name: host.groupName,
         },
       });
@@ -124,6 +129,12 @@ export default function Sidebar() {
           onClick={() => setActiveTab('quick')}
         >
           Quick
+        </button>
+        <button
+          className={`sidebar-tab ${activeTab === 'keys' ? 'active' : ''}`}
+          onClick={() => setActiveTab('keys')}
+        >
+          Keys
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'snippets' ? 'active' : ''}`}
@@ -160,6 +171,7 @@ export default function Sidebar() {
           </>
         )}
         {activeTab === 'quick' && <QuickConnect onConnect={handleQuickConnect} />}
+        {activeTab === 'keys' && <KeyManager />}
         {activeTab === 'snippets' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Snippets coming soon</div>}
         {activeTab === 'vault' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Vault coming soon</div>}
       </div>

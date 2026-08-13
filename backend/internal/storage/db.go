@@ -63,6 +63,7 @@ func (db *DB) migrate() error {
 		label TEXT NOT NULL,
 		private_key_enc BLOB NOT NULL,
 		public_key TEXT,
+		passphrase_enc BLOB,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		version INTEGER DEFAULT 1
