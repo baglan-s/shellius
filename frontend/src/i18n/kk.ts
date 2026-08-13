@@ -84,5 +84,19 @@ export const kk = {
   'snippets.run': 'Іске қосу',
   'snippets.copy': 'Көшіру',
   'snippets.noSnippets': 'Сниппеттер жоқ. Бастау үшін қосыңыз.',
+  // SFTP
+  'sftp.title': 'Файлдар',
+  'sftp.open': 'Файлдар',
+  'sftp.close': 'Жабу',
+  'sftp.upload': 'Жүктеу',
+  'sftp.download': 'Жүктеп алу',
+  'sftp.newFolder': 'Жаңа папка',
+  'sftp.folderName': 'Папка атауы',
+  'sftp.rename': 'Атын өзгерту',
+  'sftp.delete': 'Жою',
+  'sftp.deleteConfirm': 'Бұл элементті жою керек пе?',
+  'sftp.noSession': 'Файлдарды қарау үшін серверге қосылыңыз',
+  'sftp.parentDir': 'Ата-аналық директория',
+
   'vault.comingSoon': 'Қойма жақында қосылады',
 };

@@ -6,7 +6,11 @@ import (
 	"log"
 	"sync"
 
+	"encoding/base64"
+	"strings"
+
 	"github.com/gorilla/websocket"
+	"github.com/shellius/backend/internal/sftp"
 	"github.com/shellius/backend/internal/ssh"
 	"github.com/shellius/backend/internal/storage"
 	"github.com/shellius/backend/pkg/protocol"
@@ -14,18 +18,20 @@ import (
 )
 
 type SessionManager struct {
-	db       *storage.DB
-	sessions map[string]*ssh.Session
-	clients  map[string]*ssh.Client
-	mu       sync.RWMutex
-	wsMu     sync.Mutex // protects WebSocket writes
+	db           *storage.DB
+	sessions     map[string]*ssh.Session
+	clients      map[string]*ssh.Client
+	sftpHandlers map[string]*sftp.Handler
+	mu           sync.RWMutex
+	wsMu         sync.Mutex // protects WebSocket writes
 }
 
 func NewSessionManager(db *storage.DB) *SessionManager {
 	return &SessionManager{
-		db:       db,
-		sessions: make(map[string]*ssh.Session),
-		clients:  make(map[string]*ssh.Client),
+		db:           db,
+		sessions:     make(map[string]*ssh.Session),
+		clients:      make(map[string]*ssh.Client),
+		sftpHandlers: make(map[string]*sftp.Handler),
 	}
 }
 
@@ -61,6 +67,18 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleSnippetCreate(conn, msg)
 	case protocol.MsgSnippetDelete:
 		sm.handleSnippetDelete(conn, msg)
+	case protocol.MsgSFTPList:
+		sm.handleSFTPList(conn, msg)
+	case protocol.MsgSFTPMkdir:
+		sm.handleSFTPMkdir(conn, msg)
+	case protocol.MsgSFTPRemove:
+		sm.handleSFTPRemove(conn, msg)
+	case protocol.MsgSFTPRename:
+		sm.handleSFTPRename(conn, msg)
+	case protocol.MsgSFTPDownload:
+		sm.handleSFTPDownload(conn, msg)
+	case protocol.MsgSFTPUpload:
+		sm.handleSFTPUpload(conn, msg)
 	default:
 		sendError(conn, msg.ID, fmt.Sprintf("unknown message type: %s", msg.Type))
 	}
@@ -262,6 +280,10 @@ func (sm *SessionManager) cleanup(sessionID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
+	if handler, ok := sm.sftpHandlers[sessionID]; ok {
+		handler.Close()
+		delete(sm.sftpHandlers, sessionID)
+	}
 	if session, ok := sm.sessions[sessionID]; ok {
 		session.Close()
 		delete(sm.sessions, sessionID)
@@ -276,6 +298,10 @@ func (sm *SessionManager) CloseAll() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
+	for id, handler := range sm.sftpHandlers {
+		handler.Close()
+		delete(sm.sftpHandlers, id)
+	}
 	for id, session := range sm.sessions {
 		session.Close()
 		delete(sm.sessions, id)
@@ -475,6 +501,184 @@ func (sm *SessionManager) handleSnippetDelete(conn *websocket.Conn, msg *protoco
 		return
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID})
+}
+
+// --- SFTP handlers ---
+
+func (sm *SessionManager) getSFTPHandler(sessionID string) (*sftp.Handler, error) {
+	sm.mu.RLock()
+	handler, ok := sm.sftpHandlers[sessionID]
+	sm.mu.RUnlock()
+	if ok {
+		return handler, nil
+	}
+
+	sm.mu.RLock()
+	client, ok := sm.clients[sessionID]
+	sm.mu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("no SSH connection for session %s", sessionID)
+	}
+
+	handler, err := sftp.NewHandler(client.SSHConn())
+	if err != nil {
+		return nil, fmt.Errorf("failed to start SFTP: %v", err)
+	}
+
+	sm.mu.Lock()
+	sm.sftpHandlers[sessionID] = handler
+	sm.mu.Unlock()
+
+	return handler, nil
+}
+
+func (sm *SessionManager) handleSFTPList(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload protocol.SFTPListPayload
+	json.Unmarshal(payloadBytes, &payload)
+
+	path := payload.Path
+	if path == "" {
+		path = "/"
+	}
+
+	files, err := handler.ListDir(path)
+	if err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to list directory: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{
+		Type:      protocol.MsgSFTPList,
+		ID:        msg.ID,
+		SessionID: msg.SessionID,
+		Payload:   map[string]interface{}{"path": path, "files": files},
+	})
+}
+
+func (sm *SessionManager) handleSFTPMkdir(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Path string `json:"path"`
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	if err := handler.Mkdir(payload.Path); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to create directory: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
+}
+
+func (sm *SessionManager) handleSFTPRemove(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Path string `json:"path"`
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	if err := handler.Remove(payload.Path); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to remove: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
+}
+
+func (sm *SessionManager) handleSFTPRename(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		OldPath string `json:"old_path"`
+		NewPath string `json:"new_path"`
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	if err := handler.Rename(payload.OldPath, payload.NewPath); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to rename: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
+}
+
+func (sm *SessionManager) handleSFTPDownload(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Path string `json:"path"`
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	var buf strings.Builder
+	if err := handler.Download(payload.Path, &buf); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to download: %v", err))
+		return
+	}
+
+	encoded := base64.StdEncoding.EncodeToString([]byte(buf.String()))
+	sendMessage(conn, &protocol.Message{
+		Type:      protocol.MsgSFTPDownload,
+		ID:        msg.ID,
+		SessionID: msg.SessionID,
+		Payload: map[string]interface{}{
+			"path": payload.Path,
+			"data": encoded,
+			"size": len(buf.String()),
+		},
+	})
+}
+
+func (sm *SessionManager) handleSFTPUpload(conn *websocket.Conn, msg *protocol.Message) {
+	handler, err := sm.getSFTPHandler(msg.SessionID)
+	if err != nil {
+		sendError(conn, msg.ID, err.Error())
+		return
+	}
+
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Path string `json:"path"`
+		Data string `json:"data"` // base64 encoded
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	decoded, err := base64.StdEncoding.DecodeString(payload.Data)
+	if err != nil {
+		sendError(conn, msg.ID, "invalid file data")
+		return
+	}
+
+	if err := handler.Upload(payload.Path, strings.NewReader(string(decoded)), 0644); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to upload: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
 }
 
 // --- Helpers ---

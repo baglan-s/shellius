@@ -84,5 +84,19 @@ export const ru = {
   'snippets.run': 'Запуск',
   'snippets.copy': 'Копировать',
   'snippets.noSnippets': 'Нет сниппетов. Добавьте для начала.',
+  // SFTP
+  'sftp.title': 'Файлы',
+  'sftp.open': 'Файлы',
+  'sftp.close': 'Закрыть',
+  'sftp.upload': 'Загрузить',
+  'sftp.download': 'Скачать',
+  'sftp.newFolder': 'Новая папка',
+  'sftp.folderName': 'Имя папки',
+  'sftp.rename': 'Переименовать',
+  'sftp.delete': 'Удалить',
+  'sftp.deleteConfirm': 'Удалить этот элемент?',
+  'sftp.noSession': 'Подключитесь к серверу для просмотра файлов',
+  'sftp.parentDir': 'Родительская директория',
+
   'vault.comingSoon': 'Хранилище скоро будет',
 };

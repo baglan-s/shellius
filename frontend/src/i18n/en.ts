@@ -84,5 +84,19 @@ export const en = {
   'snippets.run': 'Run',
   'snippets.copy': 'Copy',
   'snippets.noSnippets': 'No snippets yet. Add one to get started.',
+  // SFTP
+  'sftp.title': 'Files',
+  'sftp.open': 'Files',
+  'sftp.close': 'Close',
+  'sftp.upload': 'Upload',
+  'sftp.download': 'Download',
+  'sftp.newFolder': 'New Folder',
+  'sftp.folderName': 'Folder name',
+  'sftp.rename': 'Rename',
+  'sftp.delete': 'Delete',
+  'sftp.deleteConfirm': 'Delete this item?',
+  'sftp.noSession': 'Connect to a server to browse files',
+  'sftp.parentDir': 'Parent directory',
+
   'vault.comingSoon': 'Vault coming soon',
 };
