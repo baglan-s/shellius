@@ -8,6 +8,7 @@ export interface Host {
   username: string;
   auth_method: string;
   password_enc?: string;
+  key_id?: string;
   group_name: string;
 }
 

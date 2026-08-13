@@ -13,12 +13,15 @@ type Tab = 'hosts' | 'quick' | 'keys' | 'snippets' | 'vault';
 
 export default function Sidebar() {
   const [activeTab, setActiveTab] = useState<Tab>('hosts');
-  const [showAddHost, setShowAddHost] = useState(false);
+  const [showHostForm, setShowHostForm] = useState(false);
+  const [editingHost, setEditingHost] = useState<Host | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const { send, subscribe, connected } = useWS();
   const { t } = useI18n();
   const setHosts = useHostStore((s) => s.setHosts);
   const addHost = useHostStore((s) => s.addHost);
+  const updateHost = useHostStore((s) => s.updateHost);
+  const removeHost = useHostStore((s) => s.removeHost);
   const addSession = useSessionStore((s) => s.addSession);
 
   // Load hosts on connect
@@ -37,8 +40,15 @@ export default function Sidebar() {
       if (msg.type === 'success' && msg.id?.startsWith('create-host-')) {
         addHost(msg.payload as Host);
       }
+      if (msg.type === 'success' && msg.id?.startsWith('update-host-')) {
+        updateHost(msg.payload as Host);
+      }
+      if (msg.type === 'success' && msg.id?.startsWith('delete-host-')) {
+        const id = msg.id.replace('delete-host-', '');
+        removeHost(id);
+      }
     });
-  }, [subscribe, setHosts, addHost]);
+  }, [subscribe, setHosts, addHost, updateHost, removeHost]);
 
   const handleConnect = useCallback(
     (host: Host) => {
@@ -85,6 +95,7 @@ export default function Sidebar() {
 
   const handleSaveHost = useCallback(
     (host: {
+      id?: string;
       label: string;
       hostname: string;
       port: number;
@@ -94,22 +105,58 @@ export default function Sidebar() {
       keyId?: string;
       groupName: string;
     }) => {
-      const msgId = `create-host-${Date.now()}`;
+      if (host.id) {
+        const msgId = `update-host-${Date.now()}`;
+        send({
+          type: 'host.update',
+          id: msgId,
+          payload: {
+            id: host.id,
+            label: host.label,
+            hostname: host.hostname,
+            port: host.port,
+            username: host.username,
+            auth_method: host.authMethod,
+            password_enc: host.password,
+            key_id: host.keyId,
+            group_name: host.groupName,
+          },
+        });
+      } else {
+        const msgId = `create-host-${Date.now()}`;
+        send({
+          type: 'host.create',
+          id: msgId,
+          payload: {
+            label: host.label,
+            hostname: host.hostname,
+            port: host.port,
+            username: host.username,
+            auth_method: host.authMethod,
+            password_enc: host.password,
+            key_id: host.keyId,
+            group_name: host.groupName,
+          },
+        });
+      }
+      setShowHostForm(false);
+      setEditingHost(null);
+    },
+    [send]
+  );
+
+  const handleEditHost = useCallback((host: Host) => {
+    setEditingHost(host);
+    setShowHostForm(true);
+  }, []);
+
+  const handleDeleteHost = useCallback(
+    (host: Host) => {
       send({
-        type: 'host.create',
-        id: msgId,
-        payload: {
-          label: host.label,
-          hostname: host.hostname,
-          port: host.port,
-          username: host.username,
-          auth_method: host.authMethod,
-          password_enc: host.password,
-          key_id: host.keyId,
-          group_name: host.groupName,
-        },
+        type: 'host.delete',
+        id: `delete-host-${host.id}`,
+        payload: { id: host.id },
       });
-      setShowAddHost(false);
     },
     [send]
   );
@@ -168,17 +215,28 @@ export default function Sidebar() {
             <button
               className="primary"
               style={{ width: '100%', marginBottom: 12 }}
-              onClick={() => setShowAddHost(!showAddHost)}
+              onClick={() => {
+                setShowHostForm(!showHostForm);
+                setEditingHost(null);
+              }}
             >
-              {showAddHost ? t('hosts.cancel') : t('hosts.addHost')}
+              {showHostForm ? t('hosts.cancel') : t('hosts.addHost')}
             </button>
-            {showAddHost ? (
+            {showHostForm ? (
               <HostForm
                 onSave={handleSaveHost}
-                onCancel={() => setShowAddHost(false)}
+                onCancel={() => {
+                  setShowHostForm(false);
+                  setEditingHost(null);
+                }}
+                editHost={editingHost || undefined}
               />
             ) : (
-              <HostList onConnect={handleConnect} />
+              <HostList
+                onConnect={handleConnect}
+                onEdit={handleEditHost}
+                onDelete={handleDeleteHost}
+              />
             )}
           </>
         )}

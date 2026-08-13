@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useWS } from '../../contexts/WebSocketContext';
 import { useKeyStore } from '../../stores/keyStore';
 import { useI18n } from '../../i18n';
+import type { Host } from '../../stores/hostStore';
 
 interface HostFormProps {
   onSave: (host: {
+    id?: string;
     label: string;
     hostname: string;
     port: number;
@@ -15,23 +17,23 @@ interface HostFormProps {
     groupName: string;
   }) => void;
   onCancel: () => void;
+  editHost?: Host;
 }
 
-export default function HostForm({ onSave, onCancel }: HostFormProps) {
-  const [label, setLabel] = useState('');
-  const [hostname, setHostname] = useState('');
-  const [port, setPort] = useState(22);
-  const [username, setUsername] = useState('root');
-  const [authMethod, setAuthMethod] = useState('password');
+export default function HostForm({ onSave, onCancel, editHost }: HostFormProps) {
+  const [label, setLabel] = useState(editHost?.label || '');
+  const [hostname, setHostname] = useState(editHost?.hostname || '');
+  const [port, setPort] = useState(editHost?.port || 22);
+  const [username, setUsername] = useState(editHost?.username || 'root');
+  const [authMethod, setAuthMethod] = useState(editHost?.auth_method || 'password');
   const [password, setPassword] = useState('');
-  const [keyId, setKeyId] = useState('');
-  const [groupName, setGroupName] = useState('');
+  const [keyId, setKeyId] = useState(editHost?.key_id || '');
+  const [groupName, setGroupName] = useState(editHost?.group_name || '');
   const { send, subscribe } = useWS();
   const keys = useKeyStore((s) => s.keys);
   const setKeys = useKeyStore((s) => s.setKeys);
   const { t } = useI18n();
 
-  // Load keys if not loaded
   useEffect(() => {
     send({ type: 'key.list' });
   }, [send]);
@@ -47,6 +49,7 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
+      id: editHost?.id,
       label,
       hostname,
       port,

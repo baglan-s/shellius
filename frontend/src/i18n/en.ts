@@ -23,6 +23,9 @@ export const en = {
   'hosts.noKeys': 'No keys available. Go to Keys tab to generate or import one.',
   'hosts.group': 'Group (optional)',
   'hosts.save': 'Save',
+  'hosts.edit': 'Edit',
+  'hosts.delete': 'Delete',
+  'hosts.deleteConfirm': 'Delete this host?',
 
   // Quick Connect
   'quick.title': 'Quick Connect',

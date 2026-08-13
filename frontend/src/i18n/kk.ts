@@ -23,6 +23,9 @@ export const kk = {
   'hosts.noKeys': 'Кілттер жоқ. Кілттер қойындысына өтіп генерациялаңыз немесе импорттаңыз.',
   'hosts.group': 'Топ (міндетті емес)',
   'hosts.save': 'Сақтау',
+  'hosts.edit': 'Өңдеу',
+  'hosts.delete': 'Жою',
+  'hosts.deleteConfirm': 'Бұл хостты жою керек пе?',
 
   // Quick Connect
   'quick.title': 'Жылдам қосылу',

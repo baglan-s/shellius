@@ -23,6 +23,9 @@ export const ru = {
   'hosts.noKeys': 'Нет ключей. Перейдите во вкладку Ключи для генерации или импорта.',
   'hosts.group': 'Группа (необязательно)',
   'hosts.save': 'Сохранить',
+  'hosts.edit': 'Редактировать',
+  'hosts.delete': 'Удалить',
+  'hosts.deleteConfirm': 'Удалить этот хост?',
 
   // Quick Connect
   'quick.title': 'Быстрое подключение',
