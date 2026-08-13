@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWS } from '../../contexts/WebSocketContext';
 import { useKeyStore, SSHKey } from '../../stores/keyStore';
+import { useI18n } from '../../i18n';
 
 export default function KeyManager() {
   const [showForm, setShowForm] = useState<'generate' | 'import' | null>(null);
@@ -13,6 +14,7 @@ export default function KeyManager() {
   const addKey = useKeyStore((s) => s.addKey);
   const removeKey = useKeyStore((s) => s.removeKey);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     send({ type: 'key.list' });
@@ -85,27 +87,27 @@ export default function KeyManager() {
           style={{ flex: 1 }}
           onClick={() => setShowForm(showForm === 'generate' ? null : 'generate')}
         >
-          Generate
+          {t('keys.generate')}
         </button>
         <button
           style={{ flex: 1, background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
           onClick={() => setShowForm(showForm === 'import' ? null : 'import')}
         >
-          Import
+          {t('keys.import')}
         </button>
       </div>
 
       {showForm === 'generate' && (
         <div className="key-form">
           <input
-            placeholder="Key label (e.g. My Server)"
+            placeholder={t('keys.keyLabel')}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             autoComplete="off"
           />
-          <div className="key-form-hint">Generates Ed25519 key pair</div>
+          <div className="key-form-hint">{t('keys.generates')}</div>
           <button className="primary" onClick={handleGenerate} style={{ width: '100%' }}>
-            Generate Key
+            {t('keys.generateKey')}
           </button>
         </div>
       )}
@@ -113,13 +115,13 @@ export default function KeyManager() {
       {showForm === 'import' && (
         <div className="key-form">
           <input
-            placeholder="Key label"
+            placeholder={t('keys.keyLabel')}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             autoComplete="off"
           />
           <textarea
-            placeholder="Paste private key here (PEM format)"
+            placeholder={t('keys.pasteKey')}
             value={importKey}
             onChange={(e) => setImportKey(e.target.value)}
             rows={6}
@@ -128,13 +130,13 @@ export default function KeyManager() {
           />
           <input
             type="password"
-            placeholder="Passphrase (leave empty if none)"
+            placeholder={t('keys.passphrase')}
             value={passphrase}
             onChange={(e) => setPassphrase(e.target.value)}
             autoComplete="new-password"
           />
           <button className="primary" onClick={handleImport} style={{ width: '100%' }}>
-            Import Key
+            {t('keys.importKey')}
           </button>
         </div>
       )}
@@ -154,21 +156,21 @@ export default function KeyManager() {
                 onClick={() => copyPublicKey(key)}
                 title="Copy public key"
               >
-                {copiedId === key.id ? 'Copied!' : 'Copy'}
+                {copiedId === key.id ? t('keys.copied') : t('keys.copy')}
               </button>
               <button
                 className="key-btn key-btn-del"
                 onClick={() => handleDelete(key.id)}
                 title="Delete key"
               >
-                Del
+                {t('keys.delete')}
               </button>
             </div>
           </div>
         ))}
         {keys.length === 0 && (
           <div className="key-empty">
-            No keys yet. Generate or import one.
+            {t('keys.noKeys')}
           </div>
         )}
       </div>

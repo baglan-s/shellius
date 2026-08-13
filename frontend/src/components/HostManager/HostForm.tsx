@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWS } from '../../contexts/WebSocketContext';
 import { useKeyStore } from '../../stores/keyStore';
+import { useI18n } from '../../i18n';
 
 interface HostFormProps {
   onSave: (host: {
@@ -28,6 +29,7 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
   const { send, subscribe } = useWS();
   const keys = useKeyStore((s) => s.keys);
   const setKeys = useKeyStore((s) => s.setKeys);
+  const { t } = useI18n();
 
   // Load keys if not loaded
   useEffect(() => {
@@ -59,14 +61,14 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
   return (
     <form onSubmit={handleSubmit} className="host-form" autoComplete="off">
       <input
-        placeholder="Label"
+        placeholder={t('hosts.label')}
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         required
         autoComplete="off"
       />
       <input
-        placeholder="Hostname / IP"
+        placeholder={t('hosts.hostname')}
         value={hostname}
         onChange={(e) => setHostname(e.target.value)}
         required
@@ -74,13 +76,13 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
       />
       <input
         type="number"
-        placeholder="Port"
+        placeholder={t('hosts.port')}
         value={port}
         onChange={(e) => setPort(Number(e.target.value))}
         autoComplete="off"
       />
       <input
-        placeholder="Username"
+        placeholder={t('hosts.username')}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         required
@@ -88,14 +90,14 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
       />
 
       <select value={authMethod} onChange={(e) => setAuthMethod(e.target.value)}>
-        <option value="password">Password</option>
-        <option value="key">SSH Key</option>
+        <option value="password">{t('hosts.authPassword')}</option>
+        <option value="key">{t('hosts.authKey')}</option>
       </select>
 
       {authMethod === 'password' && (
         <input
           type="password"
-          placeholder="Password"
+          placeholder={t('hosts.password')}
           value={password}
           autoComplete="new-password"
           onChange={(e) => setPassword(e.target.value)}
@@ -109,7 +111,7 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
             onChange={(e) => setKeyId(e.target.value)}
             required
           >
-            <option value="">-- Select SSH Key --</option>
+            <option value="">{t('hosts.selectKey')}</option>
             {keys.map((k) => (
               <option key={k.id} value={k.id}>
                 {k.label}
@@ -118,24 +120,24 @@ export default function HostForm({ onSave, onCancel }: HostFormProps) {
           </select>
           {keys.length === 0 && (
             <div className="host-form-hint">
-              No keys available. Go to Keys tab to generate or import one.
+              {t('hosts.noKeys')}
             </div>
           )}
         </>
       )}
 
       <input
-        placeholder="Group (optional)"
+        placeholder={t('hosts.group')}
         value={groupName}
         onChange={(e) => setGroupName(e.target.value)}
       />
 
       <div className="host-form-actions">
         <button type="submit" className="primary">
-          Save
+          {t('hosts.save')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
 

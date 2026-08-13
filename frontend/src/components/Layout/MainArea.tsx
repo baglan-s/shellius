@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useWS } from '../../contexts/WebSocketContext';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useI18n } from '../../i18n';
 import TabBar from '../Tabs/TabBar';
 import TerminalView from '../Terminal/Terminal';
 
@@ -10,6 +11,7 @@ export default function MainArea() {
   const setConnected = useSessionStore((s) => s.setConnected);
   const removeSession = useSessionStore((s) => s.removeSession);
   const { subscribe } = useWS();
+  const { t } = useI18n();
 
   useEffect(() => {
     return subscribe((msg) => {
@@ -44,10 +46,8 @@ export default function MainArea() {
         ))}
         {sessions.length === 0 && (
           <div className="empty-state">
-            <div className="empty-title">Welcome to Shellius</div>
-            <div className="empty-hint">
-              Use Quick Connect or add a host to get started
-            </div>
+            <div className="empty-title">{t('welcome.title')}</div>
+            <div className="empty-hint">{t('welcome.hint')}</div>
           </div>
         )}
       </div>

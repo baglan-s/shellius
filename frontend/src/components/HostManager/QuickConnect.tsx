@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '../../i18n';
 
 interface QuickConnectProps {
   onConnect: (data: {
@@ -14,6 +15,7 @@ export default function QuickConnect({ onConnect }: QuickConnectProps) {
   const [port, setPort] = useState(22);
   const [username, setUsername] = useState('root');
   const [password, setPassword] = useState('');
+  const { t } = useI18n();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +25,9 @@ export default function QuickConnect({ onConnect }: QuickConnectProps) {
 
   return (
     <form onSubmit={handleSubmit} className="quick-connect" autoComplete="off">
-      <h3 className="qc-title">Quick Connect</h3>
+      <h3 className="qc-title">{t('quick.title')}</h3>
       <input
-        placeholder="Hostname / IP"
+        placeholder={t('hosts.hostname')}
         value={hostname}
         onChange={(e) => setHostname(e.target.value)}
         required
@@ -33,13 +35,13 @@ export default function QuickConnect({ onConnect }: QuickConnectProps) {
       />
       <input
         type="number"
-        placeholder="Port"
+        placeholder={t('hosts.port')}
         value={port}
         onChange={(e) => setPort(Number(e.target.value))}
         autoComplete="off"
       />
       <input
-        placeholder="Username"
+        placeholder={t('hosts.username')}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         required
@@ -47,13 +49,13 @@ export default function QuickConnect({ onConnect }: QuickConnectProps) {
       />
       <input
         type="password"
-        placeholder="Password"
+        placeholder={t('hosts.password')}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         autoComplete="new-password"
       />
       <button type="submit" className="primary" style={{ width: '100%' }}>
-        Connect
+        {t('quick.connect')}
       </button>
 
       <style>{`

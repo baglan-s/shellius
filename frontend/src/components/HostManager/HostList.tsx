@@ -1,4 +1,5 @@
 import { useHostStore, Host } from '../../stores/hostStore';
+import { useI18n } from '../../i18n';
 
 interface HostListProps {
   onConnect: (host: Host) => void;
@@ -8,6 +9,7 @@ export default function HostList({ onConnect }: HostListProps) {
   const hosts = useHostStore((s) => s.hosts);
   const selectedId = useHostStore((s) => s.selectedHostId);
   const selectHost = useHostStore((s) => s.selectHost);
+  const { t } = useI18n();
 
   const groups = hosts.reduce<Record<string, Host[]>>((acc, host) => {
     const group = host.group_name || 'Ungrouped';
@@ -41,7 +43,7 @@ export default function HostList({ onConnect }: HostListProps) {
                   onConnect(host);
                 }}
               >
-                Connect
+                {t('hosts.connect')}
               </button>
             </div>
           ))}
@@ -50,7 +52,7 @@ export default function HostList({ onConnect }: HostListProps) {
 
       {hosts.length === 0 && (
         <div className="host-empty">
-          No hosts yet. Add one or use Quick Connect.
+          {t('hosts.noHosts')}
         </div>
       )}
 

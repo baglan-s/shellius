@@ -2,17 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWS } from '../../contexts/WebSocketContext';
 import { useHostStore, Host } from '../../stores/hostStore';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useI18n } from '../../i18n';
 import HostList from '../HostManager/HostList';
 import HostForm from '../HostManager/HostForm';
 import QuickConnect from '../HostManager/QuickConnect';
 import KeyManager from '../KeyManager/KeyManager';
+import SettingsModal from '../Settings/SettingsModal';
 
 type Tab = 'hosts' | 'quick' | 'keys' | 'snippets' | 'vault';
 
 export default function Sidebar() {
   const [activeTab, setActiveTab] = useState<Tab>('hosts');
   const [showAddHost, setShowAddHost] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { send, subscribe, connected } = useWS();
+  const { t } = useI18n();
   const setHosts = useHostStore((s) => s.setHosts);
   const addHost = useHostStore((s) => s.addHost);
   const addSession = useSessionStore((s) => s.addSession);
@@ -114,7 +118,15 @@ export default function Sidebar() {
     <div className="sidebar">
       <div className="sidebar-header">
         <h1 className="sidebar-logo">Shellius</h1>
-        <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
+        <div className="sidebar-header-right">
+          <button className="settings-gear" onClick={() => setShowSettings(true)} title={t('settings.title')}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+              <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.421-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.116l.094-.318z"/>
+            </svg>
+          </button>
+          <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
+        </div>
       </div>
 
       <nav className="sidebar-nav">
@@ -122,31 +134,31 @@ export default function Sidebar() {
           className={`sidebar-tab ${activeTab === 'hosts' ? 'active' : ''}`}
           onClick={() => setActiveTab('hosts')}
         >
-          Hosts
+          {t('tab.hosts')}
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'quick' ? 'active' : ''}`}
           onClick={() => setActiveTab('quick')}
         >
-          Quick
+          {t('tab.quick')}
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'keys' ? 'active' : ''}`}
           onClick={() => setActiveTab('keys')}
         >
-          Keys
+          {t('tab.keys')}
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'snippets' ? 'active' : ''}`}
           onClick={() => setActiveTab('snippets')}
         >
-          Snippets
+          {t('tab.snippets')}
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'vault' ? 'active' : ''}`}
           onClick={() => setActiveTab('vault')}
         >
-          Vault
+          {t('tab.vault')}
         </button>
       </nav>
 
@@ -158,7 +170,7 @@ export default function Sidebar() {
               style={{ width: '100%', marginBottom: 12 }}
               onClick={() => setShowAddHost(!showAddHost)}
             >
-              {showAddHost ? 'Cancel' : '+ Add Host'}
+              {showAddHost ? t('hosts.cancel') : t('hosts.addHost')}
             </button>
             {showAddHost ? (
               <HostForm
@@ -172,9 +184,11 @@ export default function Sidebar() {
         )}
         {activeTab === 'quick' && <QuickConnect onConnect={handleQuickConnect} />}
         {activeTab === 'keys' && <KeyManager />}
-        {activeTab === 'snippets' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Snippets coming soon</div>}
-        {activeTab === 'vault' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Vault coming soon</div>}
+        {activeTab === 'snippets' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('snippets.comingSoon')}</div>}
+        {activeTab === 'vault' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('vault.comingSoon')}</div>}
       </div>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <style>{`
         .sidebar {
@@ -190,6 +204,23 @@ export default function Sidebar() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+        }
+        .sidebar-header-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .settings-gear {
+          background: none;
+          color: var(--text-secondary);
+          padding: 4px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+        }
+        .settings-gear:hover {
+          color: var(--text-primary);
+          background: var(--bg-surface);
         }
         .sidebar-logo {
           font-size: 18px;
