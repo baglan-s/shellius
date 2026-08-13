@@ -8,6 +8,7 @@ import HostForm from '../HostManager/HostForm';
 import QuickConnect from '../HostManager/QuickConnect';
 import KeyManager from '../KeyManager/KeyManager';
 import SnippetManager from '../SnippetManager/SnippetManager';
+import VaultManager from '../Vault/VaultManager';
 import SettingsModal from '../Settings/SettingsModal';
 
 type Tab = 'hosts' | 'quick' | 'keys' | 'snippets' | 'vault';
@@ -244,7 +245,7 @@ export default function Sidebar() {
         {activeTab === 'quick' && <QuickConnect onConnect={handleQuickConnect} />}
         {activeTab === 'keys' && <KeyManager />}
         {activeTab === 'snippets' && <SnippetManager />}
-        {activeTab === 'vault' && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('vault.comingSoon')}</div>}
+        {activeTab === 'vault' && <VaultManager />}
       </div>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}

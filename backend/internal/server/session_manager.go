@@ -79,6 +79,14 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleSFTPDownload(conn, msg)
 	case protocol.MsgSFTPUpload:
 		sm.handleSFTPUpload(conn, msg)
+	case protocol.MsgVaultList:
+		sm.handleVaultList(conn)
+	case protocol.MsgVaultCreate:
+		sm.handleVaultCreate(conn, msg)
+	case protocol.MsgVaultUpdate:
+		sm.handleVaultUpdate(conn, msg)
+	case protocol.MsgVaultDelete:
+		sm.handleVaultDelete(conn, msg)
 	default:
 		sendError(conn, msg.ID, fmt.Sprintf("unknown message type: %s", msg.Type))
 	}
@@ -498,6 +506,56 @@ func (sm *SessionManager) handleSnippetDelete(conn *websocket.Conn, msg *protoco
 	json.Unmarshal(payloadBytes, &payload)
 	if err := sm.db.DeleteSnippet(payload.ID); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to delete snippet: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID})
+}
+
+// --- Vault handlers ---
+
+func (sm *SessionManager) handleVaultList(conn *websocket.Conn) {
+	entries, err := sm.db.GetVaultEntries()
+	if err != nil {
+		sendError(conn, "", fmt.Sprintf("failed to get vault entries: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgVaultList, Payload: entries})
+}
+
+func (sm *SessionManager) handleVaultCreate(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var entry storage.VaultEntry
+	if err := json.Unmarshal(payloadBytes, &entry); err != nil {
+		sendError(conn, msg.ID, "invalid vault entry data")
+		return
+	}
+	if err := sm.db.CreateVaultEntry(&entry); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to create vault entry: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, Payload: entry})
+}
+
+func (sm *SessionManager) handleVaultUpdate(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var entry storage.VaultEntry
+	if err := json.Unmarshal(payloadBytes, &entry); err != nil {
+		sendError(conn, msg.ID, "invalid vault entry data")
+		return
+	}
+	if err := sm.db.UpdateVaultEntry(&entry); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to update vault entry: %v", err))
+		return
+	}
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, Payload: entry})
+}
+
+func (sm *SessionManager) handleVaultDelete(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct{ ID string `json:"id"` }
+	json.Unmarshal(payloadBytes, &payload)
+	if err := sm.db.DeleteVaultEntry(payload.ID); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to delete vault entry: %v", err))
 		return
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID})
