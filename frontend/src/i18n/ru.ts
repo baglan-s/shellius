@@ -76,7 +76,13 @@ export const ru = {
   'common.error': 'Ошибка',
   'common.success': 'Успех',
 
-  // Snippets & Vault placeholders
-  'snippets.comingSoon': 'Сниппеты скоро будут',
+  // Snippets
+  'snippets.add': '+ Добавить сниппет',
+  'snippets.label': 'Название сниппета',
+  'snippets.command': 'Команда',
+  'snippets.description': 'Описание (необязательно)',
+  'snippets.run': 'Запуск',
+  'snippets.copy': 'Копировать',
+  'snippets.noSnippets': 'Нет сниппетов. Добавьте для начала.',
   'vault.comingSoon': 'Хранилище скоро будет',
 };

@@ -76,7 +76,13 @@ export const en = {
   'common.error': 'Error',
   'common.success': 'Success',
 
-  // Snippets & Vault placeholders
-  'snippets.comingSoon': 'Snippets coming soon',
+  // Snippets
+  'snippets.add': '+ Add Snippet',
+  'snippets.label': 'Snippet name',
+  'snippets.command': 'Command',
+  'snippets.description': 'Description (optional)',
+  'snippets.run': 'Run',
+  'snippets.copy': 'Copy',
+  'snippets.noSnippets': 'No snippets yet. Add one to get started.',
   'vault.comingSoon': 'Vault coming soon',
 };

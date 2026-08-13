@@ -76,7 +76,13 @@ export const kk = {
   'common.error': 'Қате',
   'common.success': 'Сәтті',
 
-  // Snippets & Vault placeholders
-  'snippets.comingSoon': 'Сниппеттер жақында қосылады',
+  // Snippets
+  'snippets.add': '+ Сниппет қосу',
+  'snippets.label': 'Сниппет атауы',
+  'snippets.command': 'Команда',
+  'snippets.description': 'Сипаттама (міндетті емес)',
+  'snippets.run': 'Іске қосу',
+  'snippets.copy': 'Көшіру',
+  'snippets.noSnippets': 'Сниппеттер жоқ. Бастау үшін қосыңыз.',
   'vault.comingSoon': 'Қойма жақында қосылады',
 };
