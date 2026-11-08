@@ -9,6 +9,11 @@ dist/
 frontend/node_modules/
 frontend/dist/
 
+# Tauri
+frontend/src-tauri/target/
+frontend/src-tauri/binaries/
+frontend/src-tauri/gen/
+
 # OS
 .DS_Store
 Thumbs.db
