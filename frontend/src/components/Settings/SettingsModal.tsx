@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n';
 import { useAuthStore } from '../../stores/authStore';
+import { useWS } from '../../contexts/WebSocketContext';
 import type { Locale } from '../../i18n';
 
 interface SettingsModalProps {
@@ -9,10 +10,13 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { t, locale, setLocale } = useI18n();
+  const { send, subscribe } = useWS();
   const logout = useAuthStore((s) => s.logout);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [activeSection, setActiveSection] = useState<'profile' | 'language' | 'sync'>('profile');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('');
 
   const handleLogout = () => {
     logout();
@@ -22,6 +26,32 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const handleDeleteAccount = () => {
     logout();
     onClose();
+  };
+
+  useEffect(() => {
+    return subscribe((msg) => {
+      if (msg.id === 'sync-push' || msg.id === 'sync-pull') {
+        setSyncing(false);
+        if (msg.type === 'success') {
+          const p = msg.payload as any;
+          setSyncStatus(`${msg.id === 'sync-push' ? 'Pushed' : 'Pulled'}: ${p.count ?? 0} items`);
+        } else if (msg.type === 'error') {
+          setSyncStatus((msg.payload as any)?.message || 'Sync failed');
+        }
+      }
+    });
+  }, [subscribe]);
+
+  const handlePush = () => {
+    setSyncing(true);
+    setSyncStatus('');
+    send({ type: 'sync.push', id: 'sync-push' });
+  };
+
+  const handlePull = () => {
+    setSyncing(true);
+    setSyncStatus('');
+    send({ type: 'sync.pull', id: 'sync-pull' });
   };
 
   const languages: { code: Locale; label: string }[] = [
@@ -143,13 +173,16 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     : t('sync.notConnected')}
                 </div>
                 {isAuthenticated ? (
-                  <div className="sync-actions">
-                    <button className="sync-push" onClick={() => {/* TODO */}}>
-                      {t('sync.push')}
-                    </button>
-                    <button className="sync-pull" onClick={() => {/* TODO */}}>
-                      {t('sync.pull')}
-                    </button>
+                  <div className="sync-actions-wrapper">
+                    <div className="sync-actions">
+                      <button className="sync-push" onClick={handlePush} disabled={syncing}>
+                        {syncing ? '...' : t('sync.push')}
+                      </button>
+                      <button className="sync-pull" onClick={handlePull} disabled={syncing}>
+                        {syncing ? '...' : t('sync.pull')}
+                      </button>
+                    </div>
+                    {syncStatus && <div className="sync-result">{syncStatus}</div>}
                   </div>
                 ) : (
                   <button className="settings-signin-btn" onClick={onClose}>
@@ -387,6 +420,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             cursor: pointer;
           }
           .sync-pull:hover { background: var(--border); }
+          .sync-actions-wrapper { display: flex; flex-direction: column; gap: 8px; }
+          .sync-result { font-size: 12px; color: var(--text-secondary); }
+          .sync-push:disabled, .sync-pull:disabled { opacity: 0.5; cursor: not-allowed; }
         `}</style>
       </div>
     </div>

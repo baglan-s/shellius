@@ -42,7 +42,7 @@ type SyncResponse struct {
 }
 
 func (c *Client) Push(items []SyncPayload) error {
-	body, err := json.Marshal(items)
+	body, err := json.Marshal(map[string]interface{}{"items": items})
 	if err != nil {
 		return err
 	}

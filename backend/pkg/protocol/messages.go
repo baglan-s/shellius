@@ -49,6 +49,11 @@ const (
 	MsgMasterSetup  MessageType = "master.setup"
 	MsgMasterUnlock MessageType = "master.unlock"
 
+	// Sync
+	MsgSyncPush  MessageType = "sync.push"
+	MsgSyncPull  MessageType = "sync.pull"
+	MsgAuthToken MessageType = "auth.token"
+
 	// System
 	MsgError   MessageType = "error"
 	MsgSuccess MessageType = "success"

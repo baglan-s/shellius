@@ -31,7 +31,7 @@ func New(cfg *config.Config, db *storage.DB) *Server {
 	s := &Server{
 		cfg:     cfg,
 		db:      db,
-		sessMgr: NewSessionManager(db),
+		sessMgr: NewSessionManager(db, cfg.CloudURL),
 	}
 
 	mux := http.NewServeMux()

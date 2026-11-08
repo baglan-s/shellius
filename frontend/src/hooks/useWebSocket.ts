@@ -24,6 +24,11 @@ export function useWebSocket() {
 
     ws.onopen = () => {
       setConnected(true);
+      // Send auth token to backend if authenticated
+      const token = localStorage.getItem('shellius_token');
+      if (token) {
+        ws.send(JSON.stringify({ type: 'auth.token', id: 'auth-init', payload: { token } }));
+      }
     };
 
     ws.onmessage = (event) => {

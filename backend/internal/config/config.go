@@ -19,7 +19,7 @@ func New(port int, dbPath string) *Config {
 
 	cloudURL := os.Getenv("SHELLIUS_CLOUD_URL")
 	if cloudURL == "" {
-		cloudURL = "https://api.shellius.io"
+		cloudURL = "https://app.shellcat.kz"
 	}
 
 	return &Config{

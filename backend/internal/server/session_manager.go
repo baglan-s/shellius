@@ -11,11 +11,14 @@ import (
 	"strings"
 	"sync"
 
+	"time"
+
 	"github.com/gorilla/websocket"
 	"github.com/shellius/backend/internal/crypto"
 	"github.com/shellius/backend/internal/sftp"
 	"github.com/shellius/backend/internal/ssh"
 	"github.com/shellius/backend/internal/storage"
+	cloudsync "github.com/shellius/backend/internal/sync"
 	"github.com/shellius/backend/pkg/protocol"
 	gossh "golang.org/x/crypto/ssh"
 )
@@ -36,15 +39,19 @@ type SessionManager struct {
 
 	pendingVerify   map[string]chan bool // msgID → response channel for host key verification
 	pendingVerifyMu sync.Mutex
+
+	cloudURL  string
+	authToken string // JWT token from frontend for cloud API
 }
 
-func NewSessionManager(db *storage.DB) *SessionManager {
+func NewSessionManager(db *storage.DB, cloudURL string) *SessionManager {
 	return &SessionManager{
 		db:            db,
 		sessions:      make(map[string]*ssh.Session),
 		clients:       make(map[string]*ssh.Client),
 		sftpHandlers:  make(map[string]*sftp.Handler),
 		pendingVerify: make(map[string]chan bool),
+		cloudURL:      cloudURL,
 	}
 }
 
@@ -115,6 +122,13 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleVaultUpdate(conn, msg)
 	case protocol.MsgVaultDelete:
 		sm.handleVaultDelete(conn, msg)
+	// Sync
+	case protocol.MsgAuthToken:
+		sm.handleAuthToken(conn, msg)
+	case protocol.MsgSyncPush:
+		sm.handleSyncPush(conn, msg)
+	case protocol.MsgSyncPull:
+		sm.handleSyncPull(conn, msg)
 	default:
 		sendError(conn, msg.ID, fmt.Sprintf("unknown message type: %s", msg.Type))
 	}
@@ -1221,6 +1235,199 @@ func (sm *SessionManager) handleSFTPUpload(conn *websocket.Conn, msg *protocol.M
 		return
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
+}
+
+// --- Sync handlers ---
+
+func (sm *SessionManager) handleAuthToken(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil || payload.Token == "" {
+		sendError(conn, msg.ID, "invalid token")
+		return
+	}
+	sm.authToken = payload.Token
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, Payload: map[string]string{"status": "token set"}})
+}
+
+func (sm *SessionManager) handleSyncPush(conn *websocket.Conn, msg *protocol.Message) {
+	if sm.authToken == "" {
+		sendError(conn, msg.ID, "not authenticated — sign in first")
+		return
+	}
+
+	client := cloudsync.NewClient(sm.cloudURL, sm.authToken)
+	var items []cloudsync.SyncPayload
+
+	// Collect hosts (encrypted data as-is from DB)
+	hosts, _ := sm.db.GetHosts()
+	for _, h := range hosts {
+		data, _ := json.Marshal(h)
+		items = append(items, cloudsync.SyncPayload{
+			Type: "host", ID: h.ID, Data: data, Version: h.Version, UpdatedAt: h.UpdatedAt,
+		})
+	}
+
+	// Collect snippets
+	snippets, _ := sm.db.GetSnippets()
+	for _, s := range snippets {
+		data, _ := json.Marshal(s)
+		items = append(items, cloudsync.SyncPayload{
+			Type: "snippet", ID: s.ID, Data: data, Version: s.Version, UpdatedAt: s.UpdatedAt,
+		})
+	}
+
+	// Collect vault entries (encrypted data as-is from DB)
+	entries, _ := sm.db.GetVaultEntries()
+	for _, v := range entries {
+		data, _ := json.Marshal(v)
+		items = append(items, cloudsync.SyncPayload{
+			Type: "vault", ID: v.ID, Data: data, Version: v.Version, UpdatedAt: v.UpdatedAt,
+		})
+	}
+
+	// Collect SSH keys — include encrypted private key/passphrase (json:"-" by default)
+	keys, _ := sm.db.GetKeys()
+	for _, k := range keys {
+		syncKey := struct {
+			ID            string    `json:"id"`
+			Label         string    `json:"label"`
+			PrivateKeyEnc []byte    `json:"private_key_enc"`
+			PublicKey     string    `json:"public_key"`
+			PassphraseEnc []byte    `json:"passphrase_enc"`
+			CreatedAt     time.Time `json:"created_at"`
+			UpdatedAt     time.Time `json:"updated_at"`
+			Version       int       `json:"version"`
+		}{k.ID, k.Label, k.PrivateKeyEnc, k.PublicKey, k.PassphraseEnc, k.CreatedAt, k.UpdatedAt, k.Version}
+		data, _ := json.Marshal(syncKey)
+		items = append(items, cloudsync.SyncPayload{
+			Type: "key", ID: k.ID, Data: data, Version: k.Version, UpdatedAt: k.UpdatedAt,
+		})
+	}
+
+	if err := client.Push(items); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("sync push failed: %v", err))
+		return
+	}
+
+	sendMessage(conn, &protocol.Message{
+		Type:    protocol.MsgSuccess,
+		ID:      msg.ID,
+		Payload: map[string]interface{}{"status": "pushed", "count": len(items)},
+	})
+}
+
+func (sm *SessionManager) handleSyncPull(conn *websocket.Conn, msg *protocol.Message) {
+	if sm.authToken == "" {
+		sendError(conn, msg.ID, "not authenticated — sign in first")
+		return
+	}
+
+	client := cloudsync.NewClient(sm.cloudURL, sm.authToken)
+	resp, err := client.Pull(time.Time{})
+	if err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("sync pull failed: %v", err))
+		return
+	}
+
+	for _, item := range resp.Items {
+		switch item.Type {
+		case "host":
+			var h storage.Host
+			if json.Unmarshal(item.Data, &h) == nil {
+				existing, _ := sm.db.GetHosts()
+				found := false
+				for _, e := range existing {
+					if e.ID == h.ID {
+						found = true
+						if item.Version > e.Version {
+							sm.db.UpdateHost(&h)
+						}
+						break
+					}
+				}
+				if !found {
+					sm.db.CreateHost(&h)
+				}
+			}
+		case "snippet":
+			var s storage.Snippet
+			if json.Unmarshal(item.Data, &s) == nil {
+				existing, _ := sm.db.GetSnippets()
+				found := false
+				for _, e := range existing {
+					if e.ID == s.ID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					sm.db.CreateSnippet(&s)
+				}
+			}
+		case "vault":
+			var v storage.VaultEntry
+			if json.Unmarshal(item.Data, &v) == nil {
+				existing, _ := sm.db.GetVaultEntries()
+				found := false
+				for _, e := range existing {
+					if e.ID == v.ID {
+						found = true
+						if item.Version > e.Version {
+							sm.db.UpdateVaultEntry(&v)
+						}
+						break
+					}
+				}
+				if !found {
+					sm.db.CreateVaultEntry(&v)
+				}
+			}
+		case "key":
+			var raw struct {
+				ID            string    `json:"id"`
+				Label         string    `json:"label"`
+				PrivateKeyEnc []byte    `json:"private_key_enc"`
+				PublicKey     string    `json:"public_key"`
+				PassphraseEnc []byte    `json:"passphrase_enc"`
+				CreatedAt     time.Time `json:"created_at"`
+				UpdatedAt     time.Time `json:"updated_at"`
+				Version       int       `json:"version"`
+			}
+			if json.Unmarshal(item.Data, &raw) == nil {
+				k := storage.SSHKey{
+					ID: raw.ID, Label: raw.Label, PrivateKeyEnc: raw.PrivateKeyEnc,
+					PublicKey: raw.PublicKey, PassphraseEnc: raw.PassphraseEnc,
+					CreatedAt: raw.CreatedAt, UpdatedAt: raw.UpdatedAt, Version: raw.Version,
+				}
+				existing, _ := sm.db.GetKeys()
+				found := false
+				for _, e := range existing {
+					if e.ID == k.ID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					sm.db.CreateKey(&k)
+				}
+			}
+		}
+	}
+
+	// Send refreshed lists to frontend
+	sm.handleHostList(conn)
+	sm.handleSnippetList(conn)
+	sm.handleVaultList(conn)
+	sm.handleKeyList(conn)
+
+	sendMessage(conn, &protocol.Message{
+		Type:    protocol.MsgSuccess,
+		ID:      msg.ID,
+		Payload: map[string]interface{}{"status": "pulled", "count": len(resp.Items)},
+	})
 }
 
 // --- Helpers ---
