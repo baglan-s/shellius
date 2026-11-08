@@ -91,6 +91,28 @@ export const ru = {
   'sync.lastSync': 'Последняя синхронизация',
   'sync.notConnected': 'Войдите для облачной синхронизации',
 
+  // Master Password
+  'master.setup': 'Установите мастер-пароль',
+  'master.unlock': 'Разблокируйте хранилище',
+  'master.password': 'Мастер-пароль',
+  'master.confirm': 'Подтвердите пароль',
+  'master.setupBtn': 'Установить пароль',
+  'master.unlockBtn': 'Разблокировать',
+  'master.minLength': 'Пароль должен быть не менее 6 символов',
+  'master.mismatch': 'Пароли не совпадают',
+  'master.setupHint': 'Мастер-пароль шифрует все конфиденциальные данные локально. Его нельзя восстановить при утере.',
+  'master.unlockHint': 'Введите мастер-пароль для доступа к данным.',
+
+  // Host Key Verification
+  'hostVerify.new': 'Неизвестный хост',
+  'hostVerify.changed': 'Ключ хоста изменился!',
+  'hostVerify.warning': 'ВНИМАНИЕ: Ключ хоста изменился с последнего подключения. Это может указывать на атаку "человек посередине".',
+  'hostVerify.keyType': 'Тип ключа',
+  'hostVerify.fingerprint': 'Отпечаток',
+  'hostVerify.oldFingerprint': 'Предыдущий отпечаток',
+  'hostVerify.accept': 'Доверять и подключиться',
+  'hostVerify.reject': 'Отмена',
+
   // Common
   'common.cancel': 'Отмена',
   'common.save': 'Сохранить',

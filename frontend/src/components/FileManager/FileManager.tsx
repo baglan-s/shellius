@@ -148,20 +148,32 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
     <div className="file-manager">
       <div className="fm-header">
         <div className="fm-title">{t('sftp.title')}</div>
-        <button className="fm-close" onClick={onClose}>&times;</button>
+        <button className="fm-close" onClick={onClose}>✕</button>
       </div>
 
       <div className="fm-toolbar">
-        <button className="fm-tool-btn" onClick={navigateUp} disabled={currentPath === '/'} title={t('sftp.parentDir')}>
-          ..
-        </button>
-        <div className="fm-path">{currentPath}</div>
-        <button className="fm-tool-btn" onClick={() => setShowMkdir(!showMkdir)}>
-          {t('sftp.newFolder')}
-        </button>
-        <button className="fm-tool-btn" onClick={handleUpload}>
-          {t('sftp.upload')}
-        </button>
+        <div className="fm-toolbar-top">
+          <button className="fm-nav-btn" onClick={navigateUp} disabled={currentPath === '/'} title={t('sftp.parentDir')}>
+            ..
+          </button>
+          <div className="fm-path">{currentPath}</div>
+        </div>
+        <div className="fm-toolbar-actions">
+          <button className="fm-tool-btn" onClick={() => setShowMkdir(!showMkdir)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+              <path d="M12 11v4M10 13h4" />
+            </svg>
+            {t('sftp.newFolder')}
+          </button>
+          <button className="fm-tool-btn" onClick={handleUpload}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M12 16V4" /><path d="M7 9l5-5 5 5" />
+              <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
+            </svg>
+            {t('sftp.upload')}
+          </button>
+        </div>
       </div>
 
       {showMkdir && (
@@ -173,8 +185,9 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
             onKeyDown={(e) => e.key === 'Enter' && handleMkdir()}
             autoFocus
             autoComplete="off"
+            style={{ fontSize: 12, padding: '6px 9px' }}
           />
-          <button className="fm-tool-btn" onClick={handleMkdir}>{t('common.save')}</button>
+          <button className="fm-mkdir-save" onClick={handleMkdir}>{t('common.save')}</button>
         </div>
       )}
 
@@ -187,15 +200,28 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
               onClick={() => file.is_dir && navigateTo(file.name)}
               style={{ cursor: file.is_dir ? 'pointer' : 'default' }}
             >
-              <span className="fm-icon">{file.is_dir ? '\uD83D\uDCC1' : '\uD83D\uDCC4'}</span>
-              <span className={`fm-name ${file.is_dir ? 'fm-name-dir' : ''}`}>{file.name}</span>
-              {!file.is_dir && <span className="fm-size">{formatSize(file.size)}</span>}
-              <span className="fm-mode">{file.mode}</span>
+              <div className="fm-icon" style={{ color: file.is_dir ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                {file.is_dir ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" />
+                  </svg>
+                )}
+              </div>
+              <div className="fm-item-details">
+                <div className={`fm-name ${file.is_dir ? 'fm-name-dir' : ''}`}>{file.name}</div>
+                <div className="fm-meta">
+                  {file.is_dir ? file.mode : `${formatSize(file.size)} · ${file.mode}`}
+                </div>
+              </div>
             </div>
             <div className="fm-item-actions">
               {deleteConfirmName === file.name ? (
                 <>
-                  <button className="fm-act-btn fm-act-del" onClick={() => handleDelete(file.name)}>
+                  <button className="fm-act-btn fm-act-del-confirm" onClick={() => handleDelete(file.name)}>
                     {t('common.delete')}
                   </button>
                   <button className="fm-act-btn" onClick={() => setDeleteConfirmName(null)}>
@@ -205,15 +231,16 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
               ) : (
                 <>
                   {!file.is_dir && (
-                    <button className="fm-act-btn" onClick={() => handleDownload(file.name)}>
-                      {t('sftp.download')}
+                    <button className="fm-act-btn fm-act-download" onClick={() => handleDownload(file.name)} title="Download">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M12 4v12" /><path d="M7 11l5 5 5-5" /><path d="M4 20h16" />
+                      </svg>
                     </button>
                   )}
-                  <button
-                    className="fm-act-btn fm-act-del"
-                    onClick={() => setDeleteConfirmName(file.name)}
-                  >
-                    {t('sftp.delete')}
+                  <button className="fm-act-btn fm-act-del" onClick={() => setDeleteConfirmName(file.name)} title="Delete">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M3 6h18" /><path d="M19 6l-1 14H6L5 6" />
+                    </svg>
                   </button>
                 </>
               )}
@@ -228,87 +255,131 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
       <style>{`
         .file-manager {
           width: 340px;
+          flex: 0 0 340px;
           background: var(--bg-secondary);
           border-left: 1px solid var(--border);
           display: flex;
           flex-direction: column;
-          overflow: hidden;
+          min-height: 0;
         }
         .fm-header {
+          height: 44px;
+          flex: 0 0 44px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 10px 12px;
+          padding: 0 12px;
           border-bottom: 1px solid var(--border);
         }
-        .fm-title { font-size: 14px; font-weight: 600; }
+        .fm-title { flex: 1; font-size: 14px; font-weight: 600; }
         .fm-close {
-          background: none;
-          color: var(--text-secondary);
-          font-size: 18px;
-          padding: 2px 6px;
-        }
-        .fm-close:hover { color: var(--text-primary); }
-        .fm-toolbar {
+          width: 24px;
+          height: 24px;
+          border-radius: var(--radius-sm);
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border-bottom: 1px solid var(--border);
-          flex-wrap: wrap;
+          justify-content: center;
+          color: var(--text-secondary);
+          font-size: 12px;
+          background: none;
+          padding: 0;
+          border: none;
+          cursor: pointer;
         }
+        .fm-close:hover { background: var(--bg-surface); color: var(--text-primary); }
+        .fm-toolbar {
+          flex: 0 0 auto;
+          padding: 8px 10px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .fm-toolbar-top {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .fm-nav-btn {
+          font-size: 12px;
+          font-family: 'JetBrains Mono', monospace;
+          color: var(--text-primary);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 3px 8px;
+          background: none;
+          cursor: pointer;
+        }
+        .fm-nav-btn:hover { background: var(--bg-surface); }
+        .fm-nav-btn:disabled { opacity: 0.4; cursor: default; }
         .fm-path {
           flex: 1;
+          min-width: 0;
           font-size: 12px;
           color: var(--text-secondary);
+          font-family: 'JetBrains Mono', monospace;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          min-width: 60px;
+          direction: rtl;
+          text-align: left;
+        }
+        .fm-toolbar-actions {
+          display: flex;
+          gap: 6px;
         }
         .fm-tool-btn {
-          padding: 4px 8px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
           font-size: 11px;
-          background: var(--bg-surface);
           color: var(--text-primary);
-          border-radius: 4px;
-          white-space: nowrap;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 4px 8px;
+          background: none;
+          cursor: pointer;
         }
-        .fm-tool-btn:hover { background: var(--border); }
-        .fm-tool-btn:disabled { opacity: 0.4; cursor: default; }
+        .fm-tool-btn:hover { background: var(--bg-surface); }
         .fm-mkdir {
           display: flex;
           gap: 6px;
-          padding: 8px 12px;
+          padding: 8px 10px;
           border-bottom: 1px solid var(--border);
         }
-        .fm-mkdir input {
-          flex: 1;
-          padding: 4px 8px;
-          font-size: 12px;
+        .fm-mkdir input { flex: 1; min-width: 0; }
+        .fm-mkdir-save {
+          font-size: 11px;
+          font-weight: 600;
+          color: #0d1b28;
+          background: var(--accent);
+          border-radius: var(--radius-sm);
+          padding: 6px 10px;
+          border: none;
+          cursor: pointer;
         }
         .fm-list {
           flex: 1;
-          overflow-y: auto;
-          padding: 4px 0;
+          overflow: auto;
+          padding: 6px;
         }
         .fm-item {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 6px 12px;
-          gap: 8px;
+          gap: 9px;
+          padding: 7px 8px;
+          border-radius: var(--radius-md);
         }
         .fm-item:hover { background: var(--bg-surface); }
         .fm-item:hover .fm-item-actions { opacity: 1; }
         .fm-item-info {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 9px;
           flex: 1;
           min-width: 0;
         }
-        .fm-icon { font-size: 14px; flex-shrink: 0; }
+        .fm-icon { display: flex; flex-shrink: 0; }
+        .fm-item-details { min-width: 0; flex: 1; }
         .fm-name {
           font-size: 13px;
           overflow: hidden;
@@ -316,34 +387,40 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
           white-space: nowrap;
         }
         .fm-name-dir { color: var(--accent); }
-        .fm-size {
-          font-size: 11px;
-          color: var(--text-secondary);
-          flex-shrink: 0;
-          margin-left: auto;
-        }
-        .fm-mode {
+        .fm-meta {
           font-size: 10px;
           color: var(--text-secondary);
-          flex-shrink: 0;
-          font-family: monospace;
+          font-family: 'JetBrains Mono', monospace;
         }
         .fm-item-actions {
           opacity: 0;
           display: flex;
           gap: 4px;
           flex-shrink: 0;
-          transition: opacity 0.15s;
+          transition: opacity 150ms ease;
         }
         .fm-act-btn {
-          padding: 2px 6px;
-          font-size: 10px;
-          background: var(--bg-secondary);
+          width: 22px;
+          height: 22px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           color: var(--text-secondary);
-          border-radius: 3px;
+          background: none;
+          padding: 0;
+          border: none;
+          cursor: pointer;
         }
-        .fm-act-btn:hover { color: var(--text-primary); }
-        .fm-act-del:hover { background: var(--danger); color: white; }
+        .fm-act-download:hover { background: var(--border); color: var(--accent); }
+        .fm-act-del:hover { background: var(--danger-bg); color: var(--danger); }
+        .fm-act-del-confirm {
+          width: auto;
+          padding: 2px 8px;
+          font-size: 10px;
+          background: var(--danger);
+          color: #fff;
+        }
         .fm-loading, .fm-empty {
           text-align: center;
           padding: 20px;

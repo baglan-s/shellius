@@ -10,6 +10,8 @@ const (
 	MsgSSHData       MessageType = "ssh.data"
 	MsgSSHResize     MessageType = "ssh.resize"
 	MsgSSHDisconnect MessageType = "ssh.disconnect"
+	MsgSSHHostVerify MessageType = "ssh.host_verify"  // backend → frontend
+	MsgSSHHostConfirm MessageType = "ssh.host_confirm" // frontend → backend
 
 	// SFTP
 	MsgSFTPList     MessageType = "sftp.list"
@@ -41,6 +43,11 @@ const (
 	MsgVaultCreate MessageType = "vault.create"
 	MsgVaultUpdate MessageType = "vault.update"
 	MsgVaultDelete MessageType = "vault.delete"
+
+	// Master password
+	MsgMasterStatus MessageType = "master.status"
+	MsgMasterSetup  MessageType = "master.setup"
+	MsgMasterUnlock MessageType = "master.unlock"
 
 	// System
 	MsgError   MessageType = "error"

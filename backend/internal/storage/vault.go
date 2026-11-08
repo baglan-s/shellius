@@ -10,11 +10,11 @@ type VaultEntry struct {
 	ID            string    `json:"id"`
 	Title         string    `json:"title"`
 	Username      string    `json:"username"`
-	PasswordEnc   []byte    `json:"password_enc,omitempty"`
+	PasswordEnc   string    `json:"password_enc"`
 	URL           string    `json:"url"`
-	NotesEnc      []byte    `json:"notes_enc,omitempty"`
+	NotesEnc      string    `json:"notes_enc"`
 	Category      string    `json:"category"`
-	TOTPSecretEnc []byte    `json:"totp_secret_enc,omitempty"`
+	TOTPSecretEnc string    `json:"totp_secret_enc,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 	Version       int       `json:"version"`

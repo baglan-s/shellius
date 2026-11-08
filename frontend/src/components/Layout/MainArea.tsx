@@ -29,7 +29,6 @@ export default function MainArea() {
     });
   }, [subscribe, setConnected, removeSession]);
 
-  // Close files panel when session disconnects or changes
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const filesVisible = showFiles && activeSession?.connected && activeSessionId;
 
@@ -39,7 +38,7 @@ export default function MainArea() {
         showFiles={showFiles}
         onToggleFiles={() => setShowFiles(!showFiles)}
       />
-      <div className={`terminal-area ${sessions.length > 0 ? 'has-session' : ''}`}>
+      <div className="terminal-wrapper">
         <div className="terminal-pane">
           {sessions.map((session) => (
             <div
@@ -55,6 +54,11 @@ export default function MainArea() {
           ))}
           {sessions.length === 0 && (
             <div className="empty-state">
+              <div className="empty-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5BB8F5" strokeWidth="1.7" strokeLinecap="round">
+                  <path d="M5 8l4 4-4 4" /><path d="M12 16h7" />
+                </svg>
+              </div>
               <div className="empty-title">{t('welcome.title')}</div>
               <div className="empty-hint">{t('welcome.hint')}</div>
             </div>
@@ -71,38 +75,48 @@ export default function MainArea() {
       <style>{`
         .main-area {
           flex: 1;
+          min-width: 0;
           display: flex;
           flex-direction: column;
           overflow: hidden;
         }
-        .terminal-area {
+        .terminal-wrapper {
           flex: 1;
+          min-height: 0;
           display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .terminal-area.has-session {
-          align-items: stretch;
-          justify-content: stretch;
         }
         .terminal-pane {
           flex: 1;
+          min-width: 0;
           display: flex;
           overflow: hidden;
+          background: var(--bg-primary);
+          position: relative;
         }
         .empty-state {
-          text-align: center;
-          width: 100%;
+          position: absolute;
+          inset: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          gap: 10px;
+        }
+        .empty-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background: var(--bg-surface);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 6px;
         }
         .empty-title {
           font-size: 20px;
+          font-weight: 600;
           color: var(--text-primary);
-          margin-bottom: 8px;
         }
         .empty-hint {
           color: var(--text-secondary);

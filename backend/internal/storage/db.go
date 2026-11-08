@@ -92,6 +92,23 @@ func (db *DB) migrate() error {
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		version INTEGER DEFAULT 1
 	);
+
+	CREATE TABLE IF NOT EXISTS master_settings (
+		id INTEGER PRIMARY KEY CHECK (id = 1),
+		salt BLOB NOT NULL,
+		verify_data BLOB NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS known_hosts (
+		hostname TEXT NOT NULL,
+		port INTEGER NOT NULL,
+		key_type TEXT NOT NULL,
+		fingerprint TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (hostname, port)
+	);
 	`
 	_, err := db.conn.Exec(schema)
 	return err

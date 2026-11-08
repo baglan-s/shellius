@@ -13,6 +13,34 @@ import SettingsModal from '../Settings/SettingsModal';
 
 type Tab = 'hosts' | 'quick' | 'keys' | 'snippets' | 'vault';
 
+const TAB_ICONS: Record<Tab, JSX.Element> = {
+  hosts: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 5h18v11H3z" /><path d="M9 20h6" /><path d="M12 16v4" />
+    </svg>
+  ),
+  quick: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
+    </svg>
+  ),
+  keys: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 7a4 4 0 1 1-3.5 5.9L4 20l-1-3 2-2 1 1 1.5-1.5" /><path d="M17 7h.01" />
+    </svg>
+  ),
+  snippets: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 8l-4 4 4 4" /><path d="M15 8l4 4-4 4" />
+    </svg>
+  ),
+  vault: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 10h16v10H4z" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  ),
+};
+
 export default function Sidebar() {
   const [activeTab, setActiveTab] = useState<Tab>('hosts');
   const [showHostForm, setShowHostForm] = useState(false);
@@ -26,14 +54,12 @@ export default function Sidebar() {
   const removeHost = useHostStore((s) => s.removeHost);
   const addSession = useSessionStore((s) => s.addSession);
 
-  // Load hosts on connect
   useEffect(() => {
     if (connected) {
       send({ type: 'host.list' });
     }
   }, [connected, send]);
 
-  // Handle WS messages
   useEffect(() => {
     return subscribe((msg) => {
       if (msg.type === 'host.list' && Array.isArray(msg.payload)) {
@@ -163,15 +189,17 @@ export default function Sidebar() {
     [send]
   );
 
+  const tabs: Tab[] = ['hosts', 'quick', 'keys', 'snippets', 'vault'];
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
         <h1 className="sidebar-logo">Shellius</h1>
         <div className="sidebar-header-right">
           <button className="settings-gear" onClick={() => setShowSettings(true)} title={t('settings.title')}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-              <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.421-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.116l.094-.318z"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
             </svg>
           </button>
           <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
@@ -179,36 +207,17 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        <button
-          className={`sidebar-tab ${activeTab === 'hosts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('hosts')}
-        >
-          {t('tab.hosts')}
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === 'quick' ? 'active' : ''}`}
-          onClick={() => setActiveTab('quick')}
-        >
-          {t('tab.quick')}
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === 'keys' ? 'active' : ''}`}
-          onClick={() => setActiveTab('keys')}
-        >
-          {t('tab.keys')}
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === 'snippets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('snippets')}
-        >
-          {t('tab.snippets')}
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === 'vault' ? 'active' : ''}`}
-          onClick={() => setActiveTab('vault')}
-        >
-          {t('tab.vault')}
-        </button>
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            className={`sidebar-tab ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab)}
+            title={t(`tab.${tab}`)}
+          >
+            {TAB_ICONS[tab]}
+            <span>{t(`tab.${tab}`)}</span>
+          </button>
+        ))}
       </nav>
 
       <div className="sidebar-content">
@@ -216,7 +225,7 @@ export default function Sidebar() {
           <>
             <button
               className="primary"
-              style={{ width: '100%', marginBottom: 12 }}
+              style={{ width: '100%', marginBottom: 12, height: 32, fontSize: 12 }}
               onClick={() => {
                 setShowHostForm(!showHostForm);
                 setEditingHost(null);
@@ -253,13 +262,17 @@ export default function Sidebar() {
       <style>{`
         .sidebar {
           width: 280px;
+          flex: 0 0 280px;
           background: var(--bg-secondary);
           border-right: 1px solid var(--border);
           display: flex;
           flex-direction: column;
+          min-height: 0;
         }
         .sidebar-header {
-          padding: 16px;
+          height: 48px;
+          flex: 0 0 48px;
+          padding: 0 14px;
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
@@ -274,7 +287,7 @@ export default function Sidebar() {
           background: none;
           color: var(--text-secondary);
           padding: 4px;
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
           display: flex;
           align-items: center;
         }
@@ -286,6 +299,7 @@ export default function Sidebar() {
           font-size: 18px;
           font-weight: 700;
           color: var(--accent);
+          letter-spacing: -0.02em;
         }
         .status-dot {
           width: 8px;
@@ -297,23 +311,33 @@ export default function Sidebar() {
         .sidebar-nav {
           display: flex;
           border-bottom: 1px solid var(--border);
+          padding: 0 4px;
         }
         .sidebar-tab {
           flex: 1;
-          padding: 10px 4px;
+          padding: 8px 2px;
           background: none;
           color: var(--text-secondary);
-          font-size: 11px;
+          font-size: 10px;
           border-radius: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 3px;
+          border-bottom: 2px solid transparent;
         }
         .sidebar-tab.active {
           color: var(--accent);
-          border-bottom: 2px solid var(--accent);
+          border-bottom-color: var(--accent);
+        }
+        .sidebar-tab:hover {
+          color: var(--text-primary);
         }
         .sidebar-content {
           flex: 1;
           padding: 12px;
           overflow-y: auto;
+          min-height: 0;
         }
       `}</style>
     </div>

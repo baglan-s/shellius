@@ -9,13 +9,14 @@ import (
 )
 
 type ClientConfig struct {
-	Hostname   string
-	Port       int
-	Username   string
-	AuthMethod string
-	Password   string
-	PrivateKey []byte
-	Passphrase string
+	Hostname        string
+	Port            int
+	Username        string
+	AuthMethod      string
+	Password        string
+	PrivateKey      []byte
+	Passphrase      string
+	HostKeyCallback ssh.HostKeyCallback
 }
 
 type Client struct {
@@ -33,10 +34,15 @@ func (c *Client) Connect() error {
 		return err
 	}
 
+	hostKeyCallback := c.config.HostKeyCallback
+	if hostKeyCallback == nil {
+		hostKeyCallback = ssh.InsecureIgnoreHostKey()
+	}
+
 	sshConfig := &ssh.ClientConfig{
 		User:            c.config.Username,
 		Auth:            authMethods,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: known_hosts verification
+		HostKeyCallback: hostKeyCallback,
 		Timeout:         10 * time.Second,
 	}
 

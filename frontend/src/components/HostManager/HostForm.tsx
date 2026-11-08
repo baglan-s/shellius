@@ -77,20 +77,24 @@ export default function HostForm({ onSave, onCancel, editHost }: HostFormProps) 
         required
         autoComplete="off"
       />
-      <input
-        type="number"
-        placeholder={t('hosts.port')}
-        value={port}
-        onChange={(e) => setPort(Number(e.target.value))}
-        autoComplete="off"
-      />
-      <input
-        placeholder={t('hosts.username')}
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        required
-        autoComplete="off"
-      />
+      <div className="host-form-row">
+        <input
+          type="number"
+          placeholder={t('hosts.port')}
+          value={port}
+          onChange={(e) => setPort(Number(e.target.value))}
+          autoComplete="off"
+          style={{ flex: 1 }}
+        />
+        <input
+          placeholder={t('hosts.username')}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          autoComplete="off"
+          style={{ flex: 1 }}
+        />
+      </div>
 
       <select value={authMethod} onChange={(e) => setAuthMethod(e.target.value)}>
         <option value="password">{t('hosts.authPassword')}</option>
@@ -136,26 +140,27 @@ export default function HostForm({ onSave, onCancel, editHost }: HostFormProps) 
       />
 
       <div className="host-form-actions">
-        <button type="submit" className="primary">
+        <button type="submit" className="primary" style={{ flex: 1, height: 32, fontSize: 12, fontWeight: 600 }}>
           {t('hosts.save')}
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" onClick={onCancel} style={{ flex: 1, height: 32, fontSize: 12, background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
           {t('common.cancel')}
         </button>
       </div>
 
       <style>{`
-        .host-form { display: flex; flex-direction: column; gap: 10px; }
+        .host-form { display: flex; flex-direction: column; gap: 8px; }
         .host-form input, .host-form select { width: 100%; }
         .host-form select {
           background: var(--bg-surface);
           border: 1px solid var(--border);
-          border-radius: var(--radius);
+          border-radius: var(--radius-sm);
           padding: 8px 12px;
           color: var(--text-primary);
           font-size: 14px;
         }
-        .host-form-actions { display: flex; gap: 8px; }
+        .host-form-row { display: flex; gap: 8px; }
+        .host-form-actions { display: flex; gap: 8px; margin-top: 2px; }
         .host-form-hint {
           font-size: 11px;
           color: var(--danger);

@@ -1,21 +1,28 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net"
+	"strings"
 	"sync"
 
-	"encoding/base64"
-	"strings"
-
 	"github.com/gorilla/websocket"
+	"github.com/shellius/backend/internal/crypto"
 	"github.com/shellius/backend/internal/sftp"
 	"github.com/shellius/backend/internal/ssh"
 	"github.com/shellius/backend/internal/storage"
 	"github.com/shellius/backend/pkg/protocol"
 	gossh "golang.org/x/crypto/ssh"
 )
+
+const verifyPlaintext = "shellius-verify-token"
+
+var errHostKeyRejected = errors.New("host key rejected by user")
 
 type SessionManager struct {
 	db           *storage.DB
@@ -24,27 +31,44 @@ type SessionManager struct {
 	sftpHandlers map[string]*sftp.Handler
 	mu           sync.RWMutex
 	wsMu         sync.Mutex // protects WebSocket writes
+
+	encryptionKey []byte // derived from master password, nil = locked
+
+	pendingVerify   map[string]chan bool // msgID → response channel for host key verification
+	pendingVerifyMu sync.Mutex
 }
 
 func NewSessionManager(db *storage.DB) *SessionManager {
 	return &SessionManager{
-		db:           db,
-		sessions:     make(map[string]*ssh.Session),
-		clients:      make(map[string]*ssh.Client),
-		sftpHandlers: make(map[string]*sftp.Handler),
+		db:            db,
+		sessions:      make(map[string]*ssh.Session),
+		clients:       make(map[string]*ssh.Client),
+		sftpHandlers:  make(map[string]*sftp.Handler),
+		pendingVerify: make(map[string]chan bool),
 	}
 }
 
 func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Message) {
 	switch msg.Type {
+	// Master password
+	case protocol.MsgMasterStatus:
+		sm.handleMasterStatus(conn)
+	case protocol.MsgMasterSetup:
+		sm.handleMasterSetup(conn, msg)
+	case protocol.MsgMasterUnlock:
+		sm.handleMasterUnlock(conn, msg)
+	// SSH
 	case protocol.MsgSSHConnect:
 		sm.handleConnect(conn, msg)
+	case protocol.MsgSSHHostConfirm:
+		sm.handleHostConfirm(msg)
 	case protocol.MsgSSHData:
 		sm.handleData(msg)
 	case protocol.MsgSSHResize:
 		sm.handleResize(msg)
 	case protocol.MsgSSHDisconnect:
 		sm.handleDisconnect(msg)
+	// Hosts
 	case protocol.MsgHostList:
 		sm.handleHostList(conn)
 	case protocol.MsgHostCreate:
@@ -53,6 +77,7 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleHostUpdate(conn, msg)
 	case protocol.MsgHostDelete:
 		sm.handleHostDelete(conn, msg)
+	// Keys
 	case protocol.MsgKeyList:
 		sm.handleKeyList(conn)
 	case protocol.MsgKeyGenerate:
@@ -61,12 +86,14 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleKeyImport(conn, msg)
 	case protocol.MsgKeyDelete:
 		sm.handleKeyDelete(conn, msg)
+	// Snippets
 	case protocol.MsgSnippetList:
 		sm.handleSnippetList(conn)
 	case protocol.MsgSnippetCreate:
 		sm.handleSnippetCreate(conn, msg)
 	case protocol.MsgSnippetDelete:
 		sm.handleSnippetDelete(conn, msg)
+	// SFTP
 	case protocol.MsgSFTPList:
 		sm.handleSFTPList(conn, msg)
 	case protocol.MsgSFTPMkdir:
@@ -79,6 +106,7 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleSFTPDownload(conn, msg)
 	case protocol.MsgSFTPUpload:
 		sm.handleSFTPUpload(conn, msg)
+	// Vault
 	case protocol.MsgVaultList:
 		sm.handleVaultList(conn)
 	case protocol.MsgVaultCreate:
@@ -91,6 +119,326 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sendError(conn, msg.ID, fmt.Sprintf("unknown message type: %s", msg.Type))
 	}
 }
+
+// --- Encryption helpers ---
+
+func (sm *SessionManager) encryptString(plaintext string) (string, error) {
+	if plaintext == "" {
+		return "", nil
+	}
+	encrypted, err := crypto.Encrypt([]byte(plaintext), sm.encryptionKey)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(encrypted), nil
+}
+
+func (sm *SessionManager) decryptString(ciphertext string) (string, error) {
+	if ciphertext == "" {
+		return "", nil
+	}
+	data, err := base64.StdEncoding.DecodeString(ciphertext)
+	if err != nil {
+		return ciphertext, nil // not encrypted (legacy plaintext data)
+	}
+	decrypted, err := crypto.Decrypt(data, sm.encryptionKey)
+	if err != nil {
+		return ciphertext, nil // decryption failed, return as-is (legacy data)
+	}
+	return string(decrypted), nil
+}
+
+func (sm *SessionManager) encryptBytes(plaintext []byte) ([]byte, error) {
+	if len(plaintext) == 0 {
+		return plaintext, nil
+	}
+	return crypto.Encrypt(plaintext, sm.encryptionKey)
+}
+
+func (sm *SessionManager) decryptBytes(ciphertext []byte) ([]byte, error) {
+	if len(ciphertext) == 0 {
+		return ciphertext, nil
+	}
+	decrypted, err := crypto.Decrypt(ciphertext, sm.encryptionKey)
+	if err != nil {
+		return ciphertext, nil // legacy unencrypted data
+	}
+	return decrypted, nil
+}
+
+func (sm *SessionManager) isLocked() bool {
+	return sm.encryptionKey == nil
+}
+
+// --- Master password handlers ---
+
+func (sm *SessionManager) handleMasterStatus(conn *websocket.Conn) {
+	ms, err := sm.db.GetMasterSettings()
+	if err != nil {
+		sendError(conn, "", fmt.Sprintf("failed to check master status: %v", err))
+		return
+	}
+	configured := ms != nil
+	locked := sm.isLocked()
+	sendMessage(conn, &protocol.Message{
+		Type: protocol.MsgMasterStatus,
+		Payload: map[string]interface{}{
+			"configured": configured,
+			"locked":     locked,
+		},
+	})
+}
+
+func (sm *SessionManager) handleMasterSetup(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Password string `json:"password"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil || payload.Password == "" {
+		sendError(conn, msg.ID, "password is required")
+		return
+	}
+
+	// Check if already configured
+	existing, _ := sm.db.GetMasterSettings()
+	if existing != nil {
+		sendError(conn, msg.ID, "master password already configured")
+		return
+	}
+
+	// Generate salt and derive key
+	salt, err := crypto.GenerateSalt()
+	if err != nil {
+		sendError(conn, msg.ID, "failed to generate salt")
+		return
+	}
+	key := crypto.DeriveKey(payload.Password, salt)
+
+	// Create verification data
+	verifyData, err := crypto.Encrypt([]byte(verifyPlaintext), key)
+	if err != nil {
+		sendError(conn, msg.ID, "encryption error")
+		return
+	}
+
+	// Save master settings
+	if err := sm.db.SaveMasterSettings(salt, verifyData); err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("failed to save master settings: %v", err))
+		return
+	}
+
+	// Unlock
+	sm.encryptionKey = key
+
+	// Encrypt existing unencrypted data
+	sm.migrateExistingData()
+
+	log.Println("master password configured and vault unlocked")
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID})
+}
+
+func (sm *SessionManager) handleMasterUnlock(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Password string `json:"password"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil || payload.Password == "" {
+		sendError(conn, msg.ID, "password is required")
+		return
+	}
+
+	ms, err := sm.db.GetMasterSettings()
+	if err != nil || ms == nil {
+		sendError(conn, msg.ID, "master password not configured")
+		return
+	}
+
+	// Derive key and verify
+	key := crypto.DeriveKey(payload.Password, ms.Salt)
+	decrypted, err := crypto.Decrypt(ms.VerifyData, key)
+	if err != nil || string(decrypted) != verifyPlaintext {
+		sendError(conn, msg.ID, "incorrect master password")
+		return
+	}
+
+	sm.encryptionKey = key
+	log.Println("vault unlocked")
+	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID})
+}
+
+// migrateExistingData encrypts any existing plaintext data after first master password setup.
+func (sm *SessionManager) migrateExistingData() {
+	// Migrate vault entries
+	entries, err := sm.db.GetVaultEntries()
+	if err == nil {
+		for _, e := range entries {
+			changed := false
+			if e.PasswordEnc != "" {
+				if enc, err := sm.encryptString(e.PasswordEnc); err == nil {
+					e.PasswordEnc = enc
+					changed = true
+				}
+			}
+			if e.NotesEnc != "" {
+				if enc, err := sm.encryptString(e.NotesEnc); err == nil {
+					e.NotesEnc = enc
+					changed = true
+				}
+			}
+			if e.TOTPSecretEnc != "" {
+				if enc, err := sm.encryptString(e.TOTPSecretEnc); err == nil {
+					e.TOTPSecretEnc = enc
+					changed = true
+				}
+			}
+			if changed {
+				sm.db.UpdateVaultEntry(&e)
+			}
+		}
+	}
+
+	// Migrate host passwords
+	hosts, err := sm.db.GetHosts()
+	if err == nil {
+		for _, h := range hosts {
+			if h.PasswordEnc != "" {
+				if enc, err := sm.encryptString(h.PasswordEnc); err == nil {
+					h.PasswordEnc = enc
+					sm.db.UpdateHost(&h)
+				}
+			}
+		}
+	}
+
+	// Migrate SSH keys
+	keys, err := sm.db.GetKeys()
+	if err == nil {
+		for _, k := range keys {
+			changed := false
+			if len(k.PrivateKeyEnc) > 0 {
+				if enc, err := sm.encryptBytes(k.PrivateKeyEnc); err == nil {
+					k.PrivateKeyEnc = enc
+					changed = true
+				}
+			}
+			if len(k.PassphraseEnc) > 0 {
+				if enc, err := sm.encryptBytes(k.PassphraseEnc); err == nil {
+					k.PassphraseEnc = enc
+					changed = true
+				}
+			}
+			if changed {
+				sm.db.UpdateKey(&k)
+			}
+		}
+	}
+
+	log.Println("existing data encrypted with master key")
+}
+
+// --- Host key verification ---
+
+func fingerprintSHA256(key gossh.PublicKey) string {
+	hash := sha256.Sum256(key.Marshal())
+	return base64.StdEncoding.EncodeToString(hash[:])
+}
+
+func (sm *SessionManager) makeHostKeyCallback(conn *websocket.Conn, msgID string) gossh.HostKeyCallback {
+	return func(hostname string, remote net.Addr, key gossh.PublicKey) error {
+		// Parse host:port from remote address
+		host, portStr, _ := net.SplitHostPort(remote.String())
+		port := 22
+		fmt.Sscanf(portStr, "%d", &port)
+
+		// Also try the hostname from the connect config (might be different from resolved IP)
+		if h, _, err := net.SplitHostPort(hostname); err == nil {
+			host = h
+		}
+
+		fingerprint := fingerprintSHA256(key)
+		keyType := key.Type()
+
+		known, err := sm.db.GetKnownHost(host, port)
+		if err != nil {
+			log.Printf("known_hosts lookup error: %v", err)
+			return nil // allow on DB error
+		}
+
+		if known != nil && known.Fingerprint == fingerprint {
+			// Known and matches — allow
+			return nil
+		}
+
+		// Need user confirmation
+		status := "new"
+		payload := map[string]interface{}{
+			"hostname":    host,
+			"port":        port,
+			"fingerprint": fingerprint,
+			"key_type":    keyType,
+			"status":      status,
+		}
+		if known != nil {
+			status = "changed"
+			payload["status"] = status
+			payload["old_fingerprint"] = known.Fingerprint
+		}
+
+		// Create channel for response
+		ch := make(chan bool, 1)
+		sm.pendingVerifyMu.Lock()
+		sm.pendingVerify[msgID] = ch
+		sm.pendingVerifyMu.Unlock()
+
+		// Send verification request to frontend
+		sendMessage(conn, &protocol.Message{
+			Type: protocol.MsgSSHHostVerify,
+			ID:   msgID,
+			Payload: payload,
+		})
+
+		// Wait for user response
+		accepted := <-ch
+
+		// Cleanup
+		sm.pendingVerifyMu.Lock()
+		delete(sm.pendingVerify, msgID)
+		sm.pendingVerifyMu.Unlock()
+
+		if !accepted {
+			return errHostKeyRejected
+		}
+
+		// Save to known_hosts
+		sm.db.SaveKnownHost(&storage.KnownHost{
+			Hostname:    host,
+			Port:        port,
+			KeyType:     keyType,
+			Fingerprint: fingerprint,
+		})
+
+		log.Printf("host key accepted and saved: %s:%d (%s)", host, port, keyType)
+		return nil
+	}
+}
+
+func (sm *SessionManager) handleHostConfirm(msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		Accept bool `json:"accept"`
+	}
+	json.Unmarshal(payloadBytes, &payload)
+
+	sm.pendingVerifyMu.Lock()
+	ch, ok := sm.pendingVerify[msg.ID]
+	sm.pendingVerifyMu.Unlock()
+
+	if ok {
+		ch <- payload.Accept
+	}
+}
+
+// --- SSH handlers ---
 
 func (sm *SessionManager) handleConnect(conn *websocket.Conn, msg *protocol.Message) {
 	payloadBytes, err := json.Marshal(msg.Payload)
@@ -105,12 +453,12 @@ func (sm *SessionManager) handleConnect(conn *websocket.Conn, msg *protocol.Mess
 		return
 	}
 
-	// Run connection in goroutine to not block WebSocket read loop
 	go sm.doConnect(conn, msg, &payload)
 }
 
 func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message, payload *protocol.SSHConnectPayload) {
 	var clientCfg *ssh.ClientConfig
+	hostKeyCallback := sm.makeHostKeyCallback(conn, msg.ID)
 
 	if payload.HostID != "" {
 		hosts, err := sm.db.GetHosts()
@@ -130,12 +478,21 @@ func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message,
 			return
 		}
 
+		// Decrypt password
+		password := host.PasswordEnc
+		if sm.encryptionKey != nil && password != "" {
+			if dec, err := sm.decryptString(password); err == nil {
+				password = dec
+			}
+		}
+
 		clientCfg = &ssh.ClientConfig{
-			Hostname:   host.Hostname,
-			Port:       host.Port,
-			Username:   host.Username,
-			AuthMethod: host.AuthMethod,
-			Password:   string(host.PasswordEnc), // TODO: decrypt
+			Hostname:        host.Hostname,
+			Port:            host.Port,
+			Username:        host.Username,
+			AuthMethod:      host.AuthMethod,
+			Password:        password,
+			HostKeyCallback: hostKeyCallback,
 		}
 
 		// Load SSH key if key-based auth
@@ -144,8 +501,21 @@ func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message,
 			if err == nil {
 				for _, k := range keys {
 					if k.ID == *host.KeyID {
-						clientCfg.PrivateKey = k.PrivateKeyEnc     // TODO: decrypt
-						clientCfg.Passphrase = string(k.PassphraseEnc) // TODO: decrypt
+						// Decrypt key data
+						privateKey := k.PrivateKeyEnc
+						if sm.encryptionKey != nil {
+							if dec, err := sm.decryptBytes(privateKey); err == nil {
+								privateKey = dec
+							}
+						}
+						passphrase := k.PassphraseEnc
+						if sm.encryptionKey != nil {
+							if dec, err := sm.decryptBytes(passphrase); err == nil {
+								passphrase = dec
+							}
+						}
+						clientCfg.PrivateKey = privateKey
+						clientCfg.Passphrase = string(passphrase)
 						break
 					}
 				}
@@ -153,11 +523,12 @@ func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message,
 		}
 	} else {
 		clientCfg = &ssh.ClientConfig{
-			Hostname:   payload.Hostname,
-			Port:       payload.Port,
-			Username:   payload.Username,
-			AuthMethod: payload.AuthMethod,
-			Password:   payload.Password,
+			Hostname:        payload.Hostname,
+			Port:            payload.Port,
+			Username:        payload.Username,
+			AuthMethod:      payload.AuthMethod,
+			Password:        payload.Password,
+			HostKeyCallback: hostKeyCallback,
 		}
 		if payload.Port == 0 {
 			clientCfg.Port = 22
@@ -208,7 +579,6 @@ func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message,
 
 	log.Printf("session %s ready", sessionID)
 
-	// Send success
 	sendMessage(conn, &protocol.Message{
 		Type:      protocol.MsgSuccess,
 		ID:        msg.ID,
@@ -216,7 +586,6 @@ func (sm *SessionManager) doConnect(conn *websocket.Conn, msg *protocol.Message,
 		Payload:   map[string]string{"status": "connected"},
 	})
 
-	// Stream SSH output to WebSocket
 	sm.streamOutput(conn, sessionID, session)
 }
 
@@ -328,6 +697,7 @@ func (sm *SessionManager) handleHostList(conn *websocket.Conn) {
 		sendError(conn, "", fmt.Sprintf("failed to get hosts: %v", err))
 		return
 	}
+	// Don't decrypt passwords for listing — frontend doesn't need them
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgHostList, Payload: hosts})
 }
 
@@ -337,6 +707,15 @@ func (sm *SessionManager) handleHostCreate(conn *websocket.Conn, msg *protocol.M
 	if err := json.Unmarshal(payloadBytes, &host); err != nil {
 		sendError(conn, msg.ID, "invalid host data")
 		return
+	}
+	// Encrypt password
+	if sm.encryptionKey != nil && host.PasswordEnc != "" {
+		enc, err := sm.encryptString(host.PasswordEnc)
+		if err != nil {
+			sendError(conn, msg.ID, "encryption error")
+			return
+		}
+		host.PasswordEnc = enc
 	}
 	if err := sm.db.CreateHost(&host); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to create host: %v", err))
@@ -351,6 +730,26 @@ func (sm *SessionManager) handleHostUpdate(conn *websocket.Conn, msg *protocol.M
 	if err := json.Unmarshal(payloadBytes, &host); err != nil {
 		sendError(conn, msg.ID, "invalid host data")
 		return
+	}
+	// If password is empty, keep existing password from DB
+	if host.PasswordEnc == "" && host.AuthMethod == "password" {
+		existingHosts, err := sm.db.GetHosts()
+		if err == nil {
+			for _, h := range existingHosts {
+				if h.ID == host.ID {
+					host.PasswordEnc = h.PasswordEnc
+					break
+				}
+			}
+		}
+	} else if sm.encryptionKey != nil && host.PasswordEnc != "" {
+		// Encrypt new password
+		enc, err := sm.encryptString(host.PasswordEnc)
+		if err != nil {
+			sendError(conn, msg.ID, "encryption error")
+			return
+		}
+		host.PasswordEnc = enc
 	}
 	if err := sm.db.UpdateHost(&host); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to update host: %v", err))
@@ -397,9 +796,19 @@ func (sm *SessionManager) handleKeyGenerate(conn *websocket.Conn, msg *protocol.
 		return
 	}
 
+	privateKeyData := keyPair.PrivateKey
+	if sm.encryptionKey != nil {
+		enc, err := sm.encryptBytes(privateKeyData)
+		if err != nil {
+			sendError(conn, msg.ID, "encryption error")
+			return
+		}
+		privateKeyData = enc
+	}
+
 	sshKey := &storage.SSHKey{
 		Label:         payload.Label,
-		PrivateKeyEnc: keyPair.PrivateKey, // TODO: encrypt with master key
+		PrivateKeyEnc: privateKeyData,
 		PublicKey:     keyPair.PublicKey,
 	}
 	if err := sm.db.CreateKey(sshKey); err != nil {
@@ -407,7 +816,6 @@ func (sm *SessionManager) handleKeyGenerate(conn *websocket.Conn, msg *protocol.
 		return
 	}
 
-	// Return key without private key data
 	result := storage.SSHKey{
 		ID:        sshKey.ID,
 		Label:     sshKey.Label,
@@ -429,7 +837,7 @@ func (sm *SessionManager) handleKeyImport(conn *websocket.Conn, msg *protocol.Me
 		return
 	}
 
-	// Validate the key by parsing it (with or without passphrase)
+	// Validate the key
 	var signer gossh.Signer
 	var err error
 	if payload.Passphrase != "" {
@@ -444,11 +852,25 @@ func (sm *SessionManager) handleKeyImport(conn *websocket.Conn, msg *protocol.Me
 
 	publicKey := string(gossh.MarshalAuthorizedKey(signer.PublicKey()))
 
+	// Encrypt before storing
+	privateKeyData := []byte(payload.PrivateKey)
+	passphraseData := []byte(payload.Passphrase)
+	if sm.encryptionKey != nil {
+		if enc, err := sm.encryptBytes(privateKeyData); err == nil {
+			privateKeyData = enc
+		}
+		if len(passphraseData) > 0 {
+			if enc, err := sm.encryptBytes(passphraseData); err == nil {
+				passphraseData = enc
+			}
+		}
+	}
+
 	sshKey := &storage.SSHKey{
 		Label:         payload.Label,
-		PrivateKeyEnc: []byte(payload.PrivateKey), // TODO: encrypt with master key
+		PrivateKeyEnc: privateKeyData,
 		PublicKey:     publicKey,
-		PassphraseEnc: []byte(payload.Passphrase), // TODO: encrypt with master key
+		PassphraseEnc: passphraseData,
 	}
 	if err := sm.db.CreateKey(sshKey); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to save key: %v", err))
@@ -519,6 +941,20 @@ func (sm *SessionManager) handleVaultList(conn *websocket.Conn) {
 		sendError(conn, "", fmt.Sprintf("failed to get vault entries: %v", err))
 		return
 	}
+	// Decrypt sensitive fields before sending to frontend
+	if sm.encryptionKey != nil {
+		for i := range entries {
+			if dec, err := sm.decryptString(entries[i].PasswordEnc); err == nil {
+				entries[i].PasswordEnc = dec
+			}
+			if dec, err := sm.decryptString(entries[i].NotesEnc); err == nil {
+				entries[i].NotesEnc = dec
+			}
+			if dec, err := sm.decryptString(entries[i].TOTPSecretEnc); err == nil {
+				entries[i].TOTPSecretEnc = dec
+			}
+		}
+	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgVaultList, Payload: entries})
 }
 
@@ -529,9 +965,33 @@ func (sm *SessionManager) handleVaultCreate(conn *websocket.Conn, msg *protocol.
 		sendError(conn, msg.ID, "invalid vault entry data")
 		return
 	}
+	// Encrypt sensitive fields
+	if sm.encryptionKey != nil {
+		if enc, err := sm.encryptString(entry.PasswordEnc); err == nil {
+			entry.PasswordEnc = enc
+		}
+		if enc, err := sm.encryptString(entry.NotesEnc); err == nil {
+			entry.NotesEnc = enc
+		}
+		if enc, err := sm.encryptString(entry.TOTPSecretEnc); err == nil {
+			entry.TOTPSecretEnc = enc
+		}
+	}
 	if err := sm.db.CreateVaultEntry(&entry); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to create vault entry: %v", err))
 		return
+	}
+	// Decrypt for response so frontend gets plaintext
+	if sm.encryptionKey != nil {
+		if dec, err := sm.decryptString(entry.PasswordEnc); err == nil {
+			entry.PasswordEnc = dec
+		}
+		if dec, err := sm.decryptString(entry.NotesEnc); err == nil {
+			entry.NotesEnc = dec
+		}
+		if dec, err := sm.decryptString(entry.TOTPSecretEnc); err == nil {
+			entry.TOTPSecretEnc = dec
+		}
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, Payload: entry})
 }
@@ -543,9 +1003,33 @@ func (sm *SessionManager) handleVaultUpdate(conn *websocket.Conn, msg *protocol.
 		sendError(conn, msg.ID, "invalid vault entry data")
 		return
 	}
+	// Encrypt sensitive fields
+	if sm.encryptionKey != nil {
+		if enc, err := sm.encryptString(entry.PasswordEnc); err == nil {
+			entry.PasswordEnc = enc
+		}
+		if enc, err := sm.encryptString(entry.NotesEnc); err == nil {
+			entry.NotesEnc = enc
+		}
+		if enc, err := sm.encryptString(entry.TOTPSecretEnc); err == nil {
+			entry.TOTPSecretEnc = enc
+		}
+	}
 	if err := sm.db.UpdateVaultEntry(&entry); err != nil {
 		sendError(conn, msg.ID, fmt.Sprintf("failed to update vault entry: %v", err))
 		return
+	}
+	// Decrypt for response
+	if sm.encryptionKey != nil {
+		if dec, err := sm.decryptString(entry.PasswordEnc); err == nil {
+			entry.PasswordEnc = dec
+		}
+		if dec, err := sm.decryptString(entry.NotesEnc); err == nil {
+			entry.NotesEnc = dec
+		}
+		if dec, err := sm.decryptString(entry.TOTPSecretEnc); err == nil {
+			entry.TOTPSecretEnc = dec
+		}
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, Payload: entry})
 }
@@ -741,7 +1225,6 @@ func (sm *SessionManager) handleSFTPUpload(conn *websocket.Conn, msg *protocol.M
 
 // --- Helpers ---
 
-// wsMutex is set per-connection by the server
 var wsMutex sync.Mutex
 
 func sendMessage(conn *websocket.Conn, msg *protocol.Message) {

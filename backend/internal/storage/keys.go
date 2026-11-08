@@ -51,6 +51,17 @@ func (db *DB) GetKeys() ([]SSHKey, error) {
 	return keys, nil
 }
 
+func (db *DB) UpdateKey(k *SSHKey) error {
+	k.UpdatedAt = time.Now()
+	k.Version++
+
+	_, err := db.conn.Exec(
+		`UPDATE keys SET label=?, private_key_enc=?, public_key=?, passphrase_enc=?, updated_at=?, version=? WHERE id=?`,
+		k.Label, k.PrivateKeyEnc, k.PublicKey, k.PassphraseEnc, k.UpdatedAt, k.Version, k.ID,
+	)
+	return err
+}
+
 func (db *DB) DeleteKey(id string) error {
 	_, err := db.conn.Exec(`DELETE FROM keys WHERE id=?`, id)
 	return err

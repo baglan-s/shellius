@@ -20,7 +20,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   };
 
   const handleDeleteAccount = () => {
-    // TODO: call cloud API to delete account
     logout();
     onClose();
   };
@@ -31,90 +30,91 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     { code: 'kk', label: t('lang.kk') },
   ];
 
+  const navItems = [
+    { key: 'profile' as const, label: t('settings.profile') },
+    { key: 'language' as const, label: t('settings.language') },
+    { key: 'sync' as const, label: t('sync.title') },
+  ];
+
+  const email = localStorage.getItem('shellius_email') || 'Local User';
+  const initial = email[0].toUpperCase();
+
   return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
         <div className="settings-header">
-          <h2>{t('settings.title')}</h2>
-          <button className="settings-close" onClick={onClose}>
-            x
-          </button>
+          <div className="settings-header-title">{t('settings.title')}</div>
+          <button className="settings-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="settings-body">
           <div className="settings-nav">
-            <button
-              className={`settings-nav-item ${activeSection === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveSection('profile')}
-            >
-              {t('settings.profile')}
-            </button>
-            <button
-              className={`settings-nav-item ${activeSection === 'language' ? 'active' : ''}`}
-              onClick={() => setActiveSection('language')}
-            >
-              {t('settings.language')}
-            </button>
-            <button
-              className={`settings-nav-item ${activeSection === 'sync' ? 'active' : ''}`}
-              onClick={() => setActiveSection('sync')}
-            >
-              {t('sync.title')}
-            </button>
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                className={`settings-nav-item ${activeSection === item.key ? 'active' : ''}`}
+                onClick={() => setActiveSection(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
 
           <div className="settings-content">
             {activeSection === 'profile' && (
               <div className="settings-section">
                 <div className="profile-info">
-                  <div className="profile-avatar">
-                    {(localStorage.getItem('shellius_email') || 'U')[0].toUpperCase()}
-                  </div>
-                  <div className="profile-details">
-                    <div className="profile-email">
-                      {localStorage.getItem('shellius_email') || 'Local User'}
+                  <div className="profile-avatar">{initial}</div>
+                  <div>
+                    <div className="profile-email">{email}</div>
+                    <div className="profile-status">
+                      {isAuthenticated ? 'Signed in' : 'Offline mode'}
                     </div>
                   </div>
                 </div>
 
-                <div className="settings-actions">
-                  <button className="settings-btn" onClick={handleLogout}>
-                    {t('settings.logout')}
-                  </button>
-
-                  {!showDeleteConfirm ? (
-                    <button
-                      className="settings-btn settings-btn-danger"
-                      onClick={() => setShowDeleteConfirm(true)}
-                    >
-                      {t('settings.deleteAccount')}
+                {isAuthenticated && (
+                  <div className="profile-actions">
+                    <button className="settings-btn" onClick={handleLogout}>
+                      {t('settings.logout')}
                     </button>
-                  ) : (
-                    <div className="delete-confirm">
-                      <p className="delete-warning">{t('settings.deleteConfirm')}</p>
-                      <div className="delete-confirm-actions">
-                        <button
-                          className="settings-btn settings-btn-danger"
-                          onClick={handleDeleteAccount}
-                        >
-                          {t('common.delete')}
-                        </button>
-                        <button
-                          className="settings-btn"
-                          onClick={() => setShowDeleteConfirm(false)}
-                        >
-                          {t('common.cancel')}
-                        </button>
+                    {!showDeleteConfirm ? (
+                      <button
+                        className="settings-btn settings-btn-danger"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        {t('settings.deleteAccount')}
+                      </button>
+                    ) : (
+                      <div className="delete-confirm">
+                        <div className="delete-warning">{t('settings.deleteConfirm')}</div>
+                        <div className="delete-confirm-actions">
+                          <button className="delete-confirm-btn" onClick={handleDeleteAccount}>
+                            {t('settings.deleteAccount')}
+                          </button>
+                          <button
+                            className="delete-cancel-btn"
+                            onClick={() => setShowDeleteConfirm(false)}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
+
+                {!isAuthenticated && (
+                  <button className="settings-signin-btn" onClick={onClose}>
+                    Sign In
+                  </button>
+                )}
               </div>
             )}
 
             {activeSection === 'language' && (
               <div className="settings-section">
-                <p className="settings-label">{t('settings.selectLanguage')}</p>
+                <div className="settings-section-title">{t('settings.selectLanguage')}</div>
                 <div className="language-list">
                   {languages.map((lang) => (
                     <button
@@ -122,8 +122,12 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       className={`language-item ${locale === lang.code ? 'active' : ''}`}
                       onClick={() => setLocale(lang.code)}
                     >
-                      <span className="language-name">{lang.label}</span>
-                      {locale === lang.code && <span className="language-check">✓</span>}
+                      <span>{lang.label}</span>
+                      {locale === lang.code && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round">
+                          <path d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -132,22 +136,25 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
             {activeSection === 'sync' && (
               <div className="settings-section">
+                <div className="settings-section-title">{t('sync.title')}</div>
+                <div className="sync-status">
+                  {isAuthenticated
+                    ? 'Sync your hosts, keys, snippets and vault entries to the cloud.'
+                    : t('sync.notConnected')}
+                </div>
                 {isAuthenticated ? (
-                  <div className="sync-panel">
-                    <p className="settings-label">{t('sync.title')}</p>
-                    <div className="settings-actions">
-                      <button className="settings-btn" onClick={() => {/* TODO: trigger sync push */}}>
-                        {t('sync.push')}
-                      </button>
-                      <button className="settings-btn" onClick={() => {/* TODO: trigger sync pull */}}>
-                        {t('sync.pull')}
-                      </button>
-                    </div>
+                  <div className="sync-actions">
+                    <button className="sync-push" onClick={() => {/* TODO */}}>
+                      {t('sync.push')}
+                    </button>
+                    <button className="sync-pull" onClick={() => {/* TODO */}}>
+                      {t('sync.pull')}
+                    </button>
                   </div>
                 ) : (
-                  <div className="sync-not-connected">
-                    <p className="settings-label">{t('sync.notConnected')}</p>
-                  </div>
+                  <button className="settings-signin-btn" onClick={onClose}>
+                    Sign in to enable cloud sync
+                  </button>
                 )}
               </div>
             )}
@@ -158,62 +165,72 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           .settings-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(10,11,22,0.7);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            animation: fadein 200ms ease;
           }
           .settings-modal {
             width: 520px;
-            max-height: 80vh;
-            background: var(--bg-secondary);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+            animation: popin 200ms ease;
           }
           .settings-header {
+            height: 48px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
+            padding: 0 16px;
             border-bottom: 1px solid var(--border);
           }
-          .settings-header h2 {
-            font-size: 16px;
+          .settings-header-title {
+            flex: 1;
+            font-size: 15px;
             font-weight: 600;
           }
           .settings-close {
-            background: none;
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: var(--text-secondary);
-            font-size: 16px;
-            padding: 4px 8px;
+            font-size: 12px;
+            background: none;
+            padding: 0;
+            border: none;
+            cursor: pointer;
           }
-          .settings-close:hover {
-            color: var(--text-primary);
-          }
+          .settings-close:hover { background: var(--bg-surface); color: var(--text-primary); }
           .settings-body {
             display: flex;
-            flex: 1;
-            min-height: 300px;
+            min-height: 320px;
           }
           .settings-nav {
             width: 140px;
+            flex: 0 0 140px;
             border-right: 1px solid var(--border);
-            padding: 8px;
+            padding: 10px 8px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
+            background: var(--bg-secondary);
           }
           .settings-nav-item {
-            padding: 8px 12px;
-            background: none;
+            font-size: 13px;
+            padding: 8px 10px;
+            border-radius: var(--radius-md);
+            background: transparent;
             color: var(--text-secondary);
             text-align: left;
-            font-size: 13px;
-            border-radius: var(--radius);
+            border: none;
+            cursor: pointer;
           }
           .settings-nav-item.active {
             background: var(--bg-surface);
@@ -221,111 +238,155 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           }
           .settings-nav-item:hover {
             background: var(--bg-surface);
+            color: var(--text-primary);
           }
           .settings-content {
             flex: 1;
-            padding: 20px;
-            overflow-y: auto;
+            min-width: 0;
+            padding: 18px;
           }
           .settings-section {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
+          }
+          .settings-section-title {
+            font-size: 14px;
+            font-weight: 600;
           }
           .profile-info {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 16px;
-            background: var(--bg-surface);
-            border-radius: var(--radius);
+            gap: 12px;
           }
           .profile-avatar {
             width: 48px;
             height: 48px;
             border-radius: 50%;
             background: var(--accent);
-            color: var(--bg-primary);
+            color: #0d1b28;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
             font-weight: 700;
+            flex: 0 0 48px;
           }
-          .profile-email {
-            font-size: 15px;
-            font-weight: 500;
-          }
-          .settings-actions {
+          .profile-email { font-size: 15px; }
+          .profile-status { font-size: 12px; color: var(--text-secondary); }
+          .profile-actions {
             display: flex;
-            flex-direction: column;
             gap: 8px;
           }
           .settings-btn {
-            padding: 10px 16px;
+            font-size: 12px;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
             background: var(--bg-surface);
-            color: var(--text-primary);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 13px;
-            text-align: left;
+            color: var(--text-primary);
+            cursor: pointer;
           }
-          .settings-btn:hover {
-            background: var(--border);
-          }
+          .settings-btn:hover { background: var(--border); }
           .settings-btn-danger {
-            color: var(--danger);
+            background: transparent;
             border-color: var(--danger);
+            color: var(--danger);
           }
-          .settings-btn-danger:hover {
-            background: var(--danger);
-            color: white;
+          .settings-btn-danger:hover { background: var(--danger); color: #fff; }
+          .settings-signin-btn {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            background: var(--accent);
+            color: #0d1b28;
+            align-self: flex-start;
+            border: none;
+            cursor: pointer;
           }
+          .settings-signin-btn:hover { background: var(--accent-hover); }
           .delete-confirm {
-            padding: 12px;
-            background: var(--bg-surface);
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.3);
             border-radius: var(--radius);
-            border: 1px solid var(--danger);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
           }
           .delete-warning {
-            font-size: 13px;
-            color: var(--danger);
-            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--text-primary);
+            line-height: 1.5;
           }
-          .delete-confirm-actions {
-            display: flex;
-            gap: 8px;
+          .delete-confirm-actions { display: flex; gap: 8px; }
+          .delete-confirm-btn {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            cursor: pointer;
           }
-          .settings-label {
-            font-size: 13px;
+          .delete-cancel-btn {
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
             color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
           }
+          .delete-cancel-btn:hover { color: var(--text-primary); }
           .language-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
           }
           .language-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
-            background: var(--bg-surface);
-            color: var(--text-primary);
+            padding: 11px 12px;
             border-radius: var(--radius);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             font-size: 14px;
-            border: 1px solid transparent;
+            cursor: pointer;
           }
-          .language-item.active {
-            border-color: var(--accent);
+          .language-item.active { border-color: var(--accent); }
+          .language-item:hover { background: var(--bg-surface-hover); }
+          .sync-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
           }
-          .language-item:hover {
-            background: var(--border);
+          .sync-actions { display: flex; gap: 8px; }
+          .sync-push {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            background: var(--accent);
+            color: #0d1b28;
+            border: none;
+            cursor: pointer;
           }
-          .language-check {
-            color: var(--accent);
-            font-weight: 700;
+          .sync-push:hover { background: var(--accent-hover); }
+          .sync-pull {
+            font-size: 12px;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
           }
+          .sync-pull:hover { background: var(--border); }
         `}</style>
       </div>
     </div>

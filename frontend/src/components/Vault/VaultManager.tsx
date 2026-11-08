@@ -9,11 +9,10 @@ export default function VaultManager() {
   const [editEntry, setEditEntry] = useState<VaultEntry | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [revealedId, setRevealedId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Form state
   const [title, setTitle] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +50,6 @@ export default function VaultManager() {
       if (msg.type === 'success' && msg.id?.startsWith('del-vault-')) {
         const id = msg.id.replace('del-vault-', '');
         removeEntry(id);
-        setDeleteConfirmId(null);
       }
     });
   }, [subscribe, setEntries, addEntry, updateEntry, removeEntry]);
@@ -64,6 +62,7 @@ export default function VaultManager() {
     setNotes('');
     setFormCategory('general');
     setEditEntry(null);
+    setShowPassword(false);
   };
 
   const openAdd = () => {
@@ -131,7 +130,19 @@ export default function VaultManager() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const categories = ['all', ...new Set(entries.map((e) => e.category).filter(Boolean))];
+  const allCategories = ['all', 'general', 'social', 'finance', 'work', 'dev'];
+
+  const catLabel = (cat: string) => {
+    const map: Record<string, string> = {
+      all: t('vault.all'),
+      general: t('vault.catGeneral'),
+      social: t('vault.catSocial'),
+      finance: t('vault.catFinance'),
+      work: t('vault.catWork'),
+      dev: t('vault.catDev'),
+    };
+    return map[cat] || cat;
+  };
 
   const filtered = entries.filter((e) => {
     const matchSearch =
@@ -147,41 +158,44 @@ export default function VaultManager() {
       {view === 'list' && (
         <>
           <div className="vault-toolbar">
-            <input
-              placeholder={t('vault.search')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="vault-search"
-              autoComplete="off"
-            />
-            <button className="primary vault-add-btn" onClick={openAdd}>+</button>
+            <div className="vault-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" /><path d="M20 20l-4.3-4.3" />
+              </svg>
+              <input
+                placeholder={t('vault.search')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="vault-search"
+                autoComplete="off"
+              />
+            </div>
+            <button className="vault-add-btn" onClick={openAdd}>+</button>
           </div>
 
-          {categories.length > 1 && (
-            <div className="vault-categories">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  className={`vault-cat ${cat === category ? 'active' : ''}`}
-                  onClick={() => setCategory(cat)}
-                >
-                  {cat === 'all' ? t('vault.all') : cat}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="vault-categories">
+            {allCategories.map((cat) => (
+              <button
+                key={cat}
+                className={`vault-cat ${cat === category ? 'active' : ''}`}
+                onClick={() => setCategory(cat)}
+              >
+                {catLabel(cat)}
+              </button>
+            ))}
+          </div>
 
           <button
             className="vault-gen-toggle"
             onClick={() => setView('generator')}
           >
-            {t('vault.generatePassword')}
+            {t('vault.generatePassword')} →
           </button>
 
           <div className="vault-items">
             {filtered.map((entry) => (
-              <div key={entry.id} className="vault-item">
-                <div className="vault-item-header" onClick={() => openEdit(entry)}>
+              <div key={entry.id} className="vault-item" onClick={() => openEdit(entry)}>
+                <div className="vault-item-header">
                   <div className="vault-item-info">
                     <span className="vault-item-title">{entry.title}</span>
                     <span className="vault-item-user">{entry.username}</span>
@@ -189,7 +203,12 @@ export default function VaultManager() {
                   </div>
                   <span className="vault-item-cat">{entry.category}</span>
                 </div>
-                <div className="vault-item-actions">
+                {revealedId === entry.id && (
+                  <div className="vault-revealed">
+                    <code>{entry.password_enc}</code>
+                  </div>
+                )}
+                <div className="vault-item-actions" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="vault-act-btn"
                     onClick={() => copyToClipboard(entry.username, `user-${entry.id}`)}
@@ -208,29 +227,13 @@ export default function VaultManager() {
                   >
                     {revealedId === entry.id ? t('vault.hide') : t('vault.reveal')}
                   </button>
-                  {deleteConfirmId === entry.id ? (
-                    <>
-                      <button className="vault-act-btn vault-act-del" onClick={() => handleDelete(entry.id)}>
-                        {t('common.delete')}
-                      </button>
-                      <button className="vault-act-btn" onClick={() => setDeleteConfirmId(null)}>
-                        {t('common.cancel')}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="vault-act-btn vault-act-del"
-                      onClick={() => setDeleteConfirmId(entry.id)}
-                    >
-                      {t('common.delete')}
-                    </button>
-                  )}
+                  <button
+                    className="vault-act-btn vault-act-del"
+                    onClick={() => handleDelete(entry.id)}
+                  >
+                    Del
+                  </button>
                 </div>
-                {revealedId === entry.id && (
-                  <div className="vault-revealed">
-                    <code>{entry.password_enc}</code>
-                  </div>
-                )}
               </div>
             ))}
             {filtered.length === 0 && (
@@ -242,9 +245,9 @@ export default function VaultManager() {
 
       {(view === 'add' || view === 'edit') && (
         <div className="vault-form">
-          <h3 className="vault-form-title">
+          <div className="vault-form-title">
             {view === 'edit' ? t('vault.edit') : t('vault.add')}
-          </h3>
+          </div>
           <input
             placeholder={t('vault.title')}
             value={title}
@@ -257,13 +260,21 @@ export default function VaultManager() {
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="off"
           />
-          <input
-            type="password"
-            placeholder={t('vault.password')}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-          />
+          <div className="vault-pass-wrap">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder={t('vault.password')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            />
+            <button type="button" className="vault-eye" onClick={() => setShowPassword(!showPassword)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
           <input
             placeholder={t('vault.url')}
             value={url}
@@ -281,12 +292,17 @@ export default function VaultManager() {
             placeholder={t('vault.notes')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={3}
+            rows={4}
             autoComplete="off"
+            style={{ resize: 'none' }}
           />
           <div className="vault-form-actions">
-            <button className="primary" onClick={handleSave}>{t('common.save')}</button>
-            <button onClick={() => { resetForm(); setView('list'); }}>{t('common.cancel')}</button>
+            <button className="primary" onClick={handleSave} style={{ flex: 1, height: 32, fontSize: 12 }}>
+              {t('common.save')}
+            </button>
+            <button onClick={() => { resetForm(); setView('list'); }} style={{ flex: 1, height: 32, fontSize: 12, background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+              {t('common.cancel')}
+            </button>
           </div>
         </div>
       )}
@@ -297,7 +313,10 @@ export default function VaultManager() {
             className="vault-back-btn"
             onClick={() => setView('list')}
           >
-            &larr; {t('vault.back')}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M19 12H6" /><path d="M11 6l-6 6 6 6" />
+            </svg>
+            {t('vault.back')}
           </button>
           <PasswordGenerator onUse={(pw) => {
             navigator.clipboard.writeText(pw);
@@ -308,66 +327,154 @@ export default function VaultManager() {
       <style>{`
         .vault-manager { display: flex; flex-direction: column; gap: 10px; }
         .vault-toolbar { display: flex; gap: 8px; }
-        .vault-search { flex: 1; }
-        .vault-add-btn { width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        .vault-categories { display: flex; gap: 4px; flex-wrap: wrap; }
-        .vault-cat {
-          padding: 4px 10px; font-size: 11px; background: var(--bg-surface);
-          color: var(--text-secondary); border-radius: 12px; text-transform: capitalize;
-        }
-        .vault-cat.active { background: var(--accent); color: var(--bg-primary); }
-        .vault-gen-toggle {
-          padding: 6px 12px; font-size: 11px; background: var(--bg-surface);
-          color: var(--text-secondary); border-radius: var(--radius); text-align: left;
-        }
-        .vault-gen-toggle:hover { color: var(--text-primary); }
-        .vault-items { display: flex; flex-direction: column; gap: 6px; }
-        .vault-item {
-          padding: 10px 12px; border-radius: var(--radius);
+        .vault-search-wrap {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 6px;
           background: var(--bg-surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 0 10px;
         }
+        .vault-search {
+          flex: 1;
+          min-width: 0;
+          background: transparent;
+          border: none;
+          padding: 8px 0;
+          color: var(--text-primary);
+          font-size: 13px;
+          outline: none;
+        }
+        .vault-search:focus { border: none; }
+        .vault-add-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: var(--radius-md);
+          background: var(--accent);
+          color: #0d1b28;
+          font-size: 17px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        }
+        .vault-add-btn:hover { background: var(--accent-hover); }
+        .vault-categories { display: flex; flex-wrap: wrap; gap: 5px; }
+        .vault-cat {
+          font-size: 11px;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: var(--bg-surface);
+          color: var(--text-secondary);
+          text-transform: capitalize;
+          border: none;
+        }
+        .vault-cat.active { background: var(--accent); color: #0d1b28; }
+        .vault-cat:hover { background: var(--bg-surface-hover); }
+        .vault-cat.active:hover { background: var(--accent-hover); }
+        .vault-gen-toggle {
+          font-size: 12px;
+          color: var(--text-secondary);
+          background: none;
+          padding: 2px 0;
+          text-align: left;
+          border: none;
+        }
+        .vault-gen-toggle:hover { color: var(--accent); }
+        .vault-items { display: flex; flex-direction: column; gap: 8px; }
+        .vault-item {
+          padding: 10px; border-radius: var(--radius);
+          background: var(--bg-surface);
+          border: 1px solid var(--border);
+          display: flex; flex-direction: column; gap: 6px;
+          cursor: pointer;
+        }
+        .vault-item:hover { background: var(--bg-surface-hover); }
         .vault-item-header {
-          display: flex; justify-content: space-between; align-items: flex-start;
-          cursor: pointer; gap: 8px;
+          display: flex; align-items: center; gap: 8px;
         }
-        .vault-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .vault-item-title { font-size: 13px; font-weight: 500; }
+        .vault-item-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+        .vault-item-title { font-size: 13px; font-weight: 600; }
         .vault-item-user { font-size: 12px; color: var(--text-secondary); }
         .vault-item-url { font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vault-item-cat {
-          font-size: 10px; color: var(--accent); background: var(--bg-primary);
-          padding: 2px 8px; border-radius: 8px; flex-shrink: 0; text-transform: capitalize;
+          font-size: 10px; color: var(--accent); background: var(--accent-bg);
+          padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+          text-transform: capitalize;
         }
         .vault-item-actions {
-          display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
+          display: flex; gap: 5px;
         }
         .vault-act-btn {
-          padding: 3px 8px; font-size: 10px;
-          background: var(--bg-secondary); color: var(--text-secondary);
-          border-radius: 4px;
+          padding: 3px 8px; font-size: 11px;
+          background: transparent; color: var(--text-primary);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
         }
-        .vault-act-btn:hover { color: var(--text-primary); }
-        .vault-act-del:hover { background: var(--danger); color: white; }
+        .vault-act-btn:hover { background: var(--border); }
+        .vault-act-del { color: var(--text-secondary); margin-left: auto; }
+        .vault-act-del:hover { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
         .vault-revealed {
-          margin-top: 8px; padding: 6px 10px; background: var(--bg-primary);
-          border-radius: 4px; font-size: 12px; word-break: break-all;
+          font-size: 12px;
+          font-family: 'JetBrains Mono', monospace;
+          color: var(--text-primary);
+          background: var(--bg-primary);
+          border-radius: var(--radius-sm);
+          padding: 6px 8px;
+          word-break: break-all;
         }
         .vault-empty {
           color: var(--text-secondary); font-size: 13px;
           text-align: center; padding: 20px;
         }
-        .vault-form { display: flex; flex-direction: column; gap: 10px; }
-        .vault-form-title { font-size: 14px; font-weight: 600; }
+        .vault-form { display: flex; flex-direction: column; gap: 8px; }
+        .vault-form-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
         .vault-form input, .vault-form textarea, .vault-form select { width: 100%; }
         .vault-form select {
-          background: var(--bg-surface); border: 1px solid var(--border);
-          border-radius: var(--radius); padding: 8px 12px;
-          color: var(--text-primary); font-size: 14px;
+          background: var(--bg-surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 8px 10px;
+          color: var(--text-primary);
+          font-size: 14px;
         }
-        .vault-form-actions { display: flex; gap: 8px; }
+        .vault-pass-wrap {
+          display: flex;
+          align-items: center;
+          background: var(--bg-surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 0 10px 0 0;
+        }
+        .vault-pass-wrap input {
+          flex: 1;
+          min-width: 0;
+          background: transparent;
+          border: none;
+        }
+        .vault-pass-wrap:focus-within {
+          border-color: var(--accent);
+        }
+        .vault-eye {
+          background: none;
+          color: var(--text-secondary);
+          padding: 0;
+          display: flex;
+          cursor: pointer;
+          border: none;
+        }
+        .vault-eye:hover { color: var(--text-primary); }
+        .vault-form-actions { display: flex; gap: 8px; margin-top: 2px; }
         .vault-back-btn {
           background: none; color: var(--text-secondary); font-size: 12px;
           padding: 4px 0; margin-bottom: 8px;
+          display: flex; align-items: center; gap: 6px;
+          border: none; cursor: pointer;
         }
         .vault-back-btn:hover { color: var(--text-primary); }
       `}</style>

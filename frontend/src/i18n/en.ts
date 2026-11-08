@@ -91,6 +91,28 @@ export const en = {
   'sync.lastSync': 'Last sync',
   'sync.notConnected': 'Sign in to enable cloud sync',
 
+  // Master Password
+  'master.setup': 'Set up master password',
+  'master.unlock': 'Unlock your vault',
+  'master.password': 'Master password',
+  'master.confirm': 'Confirm password',
+  'master.setupBtn': 'Set Password',
+  'master.unlockBtn': 'Unlock',
+  'master.minLength': 'Password must be at least 6 characters',
+  'master.mismatch': 'Passwords do not match',
+  'master.setupHint': 'Your master password encrypts all sensitive data locally. It cannot be recovered if lost.',
+  'master.unlockHint': 'Enter your master password to access your data.',
+
+  // Host Key Verification
+  'hostVerify.new': 'Unknown Host',
+  'hostVerify.changed': 'Host Key Changed!',
+  'hostVerify.warning': 'WARNING: The host key has changed since last connection. This could indicate a man-in-the-middle attack.',
+  'hostVerify.keyType': 'Key Type',
+  'hostVerify.fingerprint': 'Fingerprint',
+  'hostVerify.oldFingerprint': 'Previous Fingerprint',
+  'hostVerify.accept': 'Trust & Connect',
+  'hostVerify.reject': 'Cancel',
+
   // Common
   'common.cancel': 'Cancel',
   'common.save': 'Save',

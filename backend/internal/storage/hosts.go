@@ -13,7 +13,7 @@ type Host struct {
 	Port       int       `json:"port"`
 	Username   string    `json:"username"`
 	AuthMethod string    `json:"auth_method"`
-	PasswordEnc []byte   `json:"password_enc,omitempty"`
+	PasswordEnc string   `json:"password_enc,omitempty"`
 	KeyID      *string   `json:"key_id,omitempty"`
 	GroupName  string    `json:"group_name"`
 	CreatedAt  time.Time `json:"created_at"`

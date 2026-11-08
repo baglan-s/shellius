@@ -1,6 +1,7 @@
 # Go
 backend/shellius
 cloud/server
+cloud/cloud-server
 *.exe
 dist/
 

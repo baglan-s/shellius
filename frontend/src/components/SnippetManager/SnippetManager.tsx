@@ -9,7 +9,6 @@ export default function SnippetManager() {
   const [label, setLabel] = useState('');
   const [command, setCommand] = useState('');
   const [description, setDescription] = useState('');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { send, subscribe } = useWS();
   const snippets = useSnippetStore((s) => s.snippets);
   const setSnippets = useSnippetStore((s) => s.setSnippets);
@@ -57,7 +56,6 @@ export default function SnippetManager() {
         id: `del-snippet-${id}`,
         payload: { id },
       });
-      setDeleteConfirmId(null);
     },
     [send]
   );
@@ -82,7 +80,7 @@ export default function SnippetManager() {
     <div className="snippet-manager">
       <button
         className="primary"
-        style={{ width: '100%', marginBottom: 12 }}
+        style={{ width: '100%', marginBottom: 4, height: 32, fontSize: 12 }}
         onClick={() => setShowForm(!showForm)}
       >
         {showForm ? t('common.cancel') : t('snippets.add')}
@@ -101,7 +99,7 @@ export default function SnippetManager() {
             value={command}
             onChange={(e) => setCommand(e.target.value)}
             rows={3}
-            style={{ fontFamily: 'monospace', fontSize: 12 }}
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, resize: 'none' }}
             autoComplete="off"
           />
           <input
@@ -110,7 +108,7 @@ export default function SnippetManager() {
             onChange={(e) => setDescription(e.target.value)}
             autoComplete="off"
           />
-          <button className="primary" onClick={handleCreate} style={{ width: '100%' }}>
+          <button className="primary" onClick={handleCreate} style={{ width: '100%', height: 30, fontSize: 12 }}>
             {t('common.save')}
           </button>
         </div>
@@ -119,56 +117,32 @@ export default function SnippetManager() {
       <div className="snippet-list">
         {snippets.map((snippet) => (
           <div key={snippet.id} className="snippet-item">
-            <div className="snippet-info">
-              <span className="snippet-label">{snippet.label}</span>
-              <code className="snippet-command">{snippet.command}</code>
-              {snippet.description && (
-                <span className="snippet-desc">{snippet.description}</span>
-              )}
-            </div>
+            <div className="snippet-label">{snippet.label}</div>
+            <div className="snippet-command">{snippet.command}</div>
+            {snippet.description && (
+              <div className="snippet-desc">{snippet.description}</div>
+            )}
             <div className="snippet-actions">
-              {deleteConfirmId === snippet.id ? (
-                <>
-                  <button
-                    className="snippet-btn snippet-btn-del"
-                    onClick={() => handleDelete(snippet.id)}
-                  >
-                    {t('common.delete')}
-                  </button>
-                  <button
-                    className="snippet-btn"
-                    onClick={() => setDeleteConfirmId(null)}
-                  >
-                    {t('common.cancel')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {activeSessionId && (
-                    <button
-                      className="snippet-btn snippet-btn-run"
-                      onClick={() => handleRun(snippet)}
-                      title={t('snippets.run')}
-                    >
-                      {t('snippets.run')}
-                    </button>
-                  )}
-                  <button
-                    className="snippet-btn"
-                    onClick={() => handleCopy(snippet.command)}
-                    title={t('snippets.copy')}
-                  >
-                    {t('keys.copy')}
-                  </button>
-                  <button
-                    className="snippet-btn snippet-btn-del"
-                    onClick={() => setDeleteConfirmId(snippet.id)}
-                    title={t('common.delete')}
-                  >
-                    {t('keys.delete')}
-                  </button>
-                </>
+              {activeSessionId && (
+                <button
+                  className="snippet-btn snippet-btn-run"
+                  onClick={() => handleRun(snippet)}
+                >
+                  {t('snippets.run')}
+                </button>
               )}
+              <button
+                className="snippet-btn"
+                onClick={() => handleCopy(snippet.command)}
+              >
+                {t('keys.copy')}
+              </button>
+              <button
+                className="snippet-btn snippet-btn-del"
+                onClick={() => handleDelete(snippet.id)}
+              >
+                {t('keys.delete')}
+              </button>
             </div>
           </div>
         ))}
@@ -178,39 +152,45 @@ export default function SnippetManager() {
       </div>
 
       <style>{`
-        .snippet-manager { display: flex; flex-direction: column; gap: 12px; }
+        .snippet-manager { display: flex; flex-direction: column; gap: 8px; }
         .snippet-form {
           display: flex; flex-direction: column; gap: 8px;
-          padding: 12px; background: var(--bg-surface);
+          padding: 10px; background: var(--bg-surface);
+          border: 1px solid var(--border);
           border-radius: var(--radius);
         }
         .snippet-form input, .snippet-form textarea { width: 100%; }
-        .snippet-list { display: flex; flex-direction: column; gap: 6px; }
+        .snippet-list { display: flex; flex-direction: column; gap: 8px; }
         .snippet-item {
-          padding: 10px 12px; border-radius: var(--radius);
+          padding: 10px; border-radius: var(--radius);
           background: var(--bg-surface);
-          display: flex; justify-content: space-between;
-          align-items: flex-start; gap: 8px;
+          border: 1px solid var(--border);
+          display: flex; flex-direction: column; gap: 6px;
         }
-        .snippet-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-        .snippet-label { font-size: 13px; font-weight: 500; }
+        .snippet-item:hover { background: var(--bg-surface-hover); }
+        .snippet-label { font-size: 13px; font-weight: 600; }
         .snippet-command {
           font-size: 11px; color: var(--accent);
+          font-family: 'JetBrains Mono', monospace;
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-          background: var(--bg-primary); padding: 3px 6px;
-          border-radius: 3px;
+          background: var(--bg-primary); padding: 6px 8px;
+          border-radius: var(--radius-sm);
         }
         .snippet-desc { font-size: 11px; color: var(--text-secondary); }
-        .snippet-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .snippet-actions { display: flex; gap: 6px; }
         .snippet-btn {
-          padding: 3px 8px; font-size: 11px;
-          background: var(--bg-secondary); color: var(--text-secondary);
-          border-radius: 4px;
+          padding: 4px 10px; font-size: 11px;
+          background: transparent; color: var(--text-primary);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
         }
-        .snippet-btn:hover { color: var(--text-primary); }
-        .snippet-btn-run { background: var(--accent); color: var(--bg-primary); }
+        .snippet-btn:hover { background: var(--border); }
+        .snippet-btn-run {
+          background: var(--accent); color: #0d1b28;
+          border-color: transparent; font-weight: 600;
+        }
         .snippet-btn-run:hover { background: var(--accent-hover); }
-        .snippet-btn-del:hover { background: var(--danger); color: white; }
+        .snippet-btn-del:hover { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
         .snippet-empty {
           color: var(--text-secondary); font-size: 13px;
           text-align: center; padding: 20px;

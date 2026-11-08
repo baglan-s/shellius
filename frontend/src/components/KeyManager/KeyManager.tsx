@@ -84,13 +84,13 @@ export default function KeyManager() {
       <div className="key-actions">
         <button
           className="primary"
-          style={{ flex: 1 }}
+          style={{ flex: 1, height: 30, fontSize: 12 }}
           onClick={() => setShowForm(showForm === 'generate' ? null : 'generate')}
         >
           {t('keys.generate')}
         </button>
         <button
-          style={{ flex: 1, background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+          style={{ flex: 1, height: 30, fontSize: 12, background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
           onClick={() => setShowForm(showForm === 'import' ? null : 'import')}
         >
           {t('keys.import')}
@@ -106,7 +106,7 @@ export default function KeyManager() {
             autoComplete="off"
           />
           <div className="key-form-hint">{t('keys.generates')}</div>
-          <button className="primary" onClick={handleGenerate} style={{ width: '100%' }}>
+          <button className="primary" onClick={handleGenerate} style={{ width: '100%', height: 30, fontSize: 12 }}>
             {t('keys.generateKey')}
           </button>
         </div>
@@ -125,7 +125,7 @@ export default function KeyManager() {
             value={importKey}
             onChange={(e) => setImportKey(e.target.value)}
             rows={6}
-            style={{ fontFamily: 'monospace', fontSize: 11 }}
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, resize: 'none' }}
             autoComplete="off"
           />
           <input
@@ -135,7 +135,7 @@ export default function KeyManager() {
             onChange={(e) => setPassphrase(e.target.value)}
             autoComplete="new-password"
           />
-          <button className="primary" onClick={handleImport} style={{ width: '100%' }}>
+          <button className="primary" onClick={handleImport} style={{ width: '100%', height: 30, fontSize: 12 }}>
             {t('keys.importKey')}
           </button>
         </div>
@@ -154,14 +154,12 @@ export default function KeyManager() {
               <button
                 className="key-btn"
                 onClick={() => copyPublicKey(key)}
-                title="Copy public key"
               >
                 {copiedId === key.id ? t('keys.copied') : t('keys.copy')}
               </button>
               <button
                 className="key-btn key-btn-del"
                 onClick={() => handleDelete(key.id)}
-                title="Delete key"
               >
                 {t('keys.delete')}
               </button>
@@ -176,36 +174,40 @@ export default function KeyManager() {
       </div>
 
       <style>{`
-        .key-manager { display: flex; flex-direction: column; gap: 12px; }
+        .key-manager { display: flex; flex-direction: column; gap: 10px; }
         .key-actions { display: flex; gap: 8px; }
         .key-form {
           display: flex; flex-direction: column; gap: 8px;
-          padding: 12px; background: var(--bg-surface);
+          padding: 10px; background: var(--bg-surface);
+          border: 1px solid var(--border);
           border-radius: var(--radius);
         }
         .key-form input, .key-form textarea { width: 100%; }
         .key-form-hint { font-size: 11px; color: var(--text-secondary); }
-        .key-list { display: flex; flex-direction: column; gap: 6px; }
+        .key-list { display: flex; flex-direction: column; gap: 8px; }
         .key-item {
-          padding: 10px 12px; border-radius: var(--radius);
+          padding: 10px; border-radius: var(--radius);
           background: var(--bg-surface);
+          border: 1px solid var(--border);
           display: flex; justify-content: space-between;
           align-items: flex-start; gap: 8px;
         }
         .key-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-        .key-label { font-size: 13px; font-weight: 500; }
+        .key-label { font-size: 13px; font-weight: 600; }
         .key-fingerprint {
           font-size: 10px; color: var(--text-secondary);
+          font-family: 'JetBrains Mono', monospace;
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .key-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .key-btn {
           padding: 3px 8px; font-size: 11px;
-          background: var(--bg-secondary); color: var(--text-secondary);
-          border-radius: 4px;
+          background: transparent; color: var(--text-primary);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
         }
-        .key-btn:hover { color: var(--text-primary); }
-        .key-btn-del:hover { background: var(--danger); color: white; }
+        .key-btn:hover { background: var(--border); }
+        .key-btn-del:hover { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
         .key-empty {
           color: var(--text-secondary); font-size: 13px;
           text-align: center; padding: 20px;

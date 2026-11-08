@@ -67,24 +67,28 @@ export default function HostList({ onConnect, onEdit, onDelete }: HostListProps)
                 ) : (
                   <>
                     <button
-                      className="host-action-btn"
+                      className="host-action-icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEdit(host);
                       }}
                       title={t('hosts.edit')}
                     >
-                      {t('hosts.edit')}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      </svg>
                     </button>
                     <button
-                      className="host-action-btn host-action-del"
+                      className="host-action-icon host-action-del-icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeleteConfirmId(host.id);
                       }}
                       title={t('hosts.delete')}
                     >
-                      {t('hosts.delete')}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M3 6h18" /><path d="M19 6l-1 14H6L5 6" />
+                      </svg>
                     </button>
                     <button
                       className="host-connect-btn"
@@ -92,8 +96,11 @@ export default function HostList({ onConnect, onEdit, onDelete }: HostListProps)
                         e.stopPropagation();
                         onConnect(host);
                       }}
+                      title={t('hosts.connect')}
                     >
-                      {t('hosts.connect')}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </>
                 )}
@@ -116,47 +123,73 @@ export default function HostList({ onConnect, onEdit, onDelete }: HostListProps)
           color: var(--text-secondary);
           text-transform: uppercase;
           padding: 8px 0 4px;
+          letter-spacing: 0.05em;
         }
         .host-item {
-          padding: 8px 12px;
+          padding: 10px 12px;
           border-radius: var(--radius);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 8px;
+          background: var(--bg-surface);
+          border: 1px solid var(--border);
+          border-left: 2px solid transparent;
         }
-        .host-item:hover { background: var(--bg-surface); }
+        .host-item:hover { background: var(--bg-surface-hover); }
         .host-item:hover .host-actions { opacity: 1; }
-        .host-item.selected { background: var(--bg-surface); border-left: 2px solid var(--accent); }
+        .host-item.selected { border-left-color: var(--accent); }
         .host-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .host-label { font-size: 14px; }
-        .host-addr { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .host-label { font-size: 13px; font-weight: 600; }
+        .host-addr {
+          font-size: 12px; color: var(--text-secondary);
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px;
+        }
         .host-actions {
           opacity: 0;
           display: flex;
           gap: 4px;
           flex-shrink: 0;
-          transition: opacity 0.15s;
+          transition: opacity 150ms ease;
         }
+        .host-action-icon {
+          width: 26px;
+          height: 26px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: none;
+          color: var(--text-secondary);
+          padding: 0;
+          border: 1px solid var(--border);
+        }
+        .host-action-icon:hover { background: var(--border); color: var(--text-primary); }
+        .host-action-del-icon:hover { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+        .host-connect-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--accent);
+          color: #0d1b28;
+          padding: 0;
+        }
+        .host-connect-btn:hover { background: var(--accent-hover); }
         .host-action-btn {
           padding: 3px 8px;
           font-size: 11px;
           background: var(--bg-secondary);
           color: var(--text-secondary);
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
         }
         .host-action-btn:hover { color: var(--text-primary); }
+        .host-action-del { color: var(--danger); }
         .host-action-del:hover { background: var(--danger); color: white; }
-        .host-connect-btn {
-          padding: 4px 10px;
-          font-size: 11px;
-          background: var(--accent);
-          color: var(--bg-primary);
-          border-radius: 4px;
-          flex-shrink: 0;
-        }
-        .host-connect-btn:hover { background: var(--accent-hover); }
         .host-delete-confirm {
           display: flex;
           align-items: center;

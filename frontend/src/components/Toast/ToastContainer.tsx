@@ -6,18 +6,37 @@ export default function ToastContainer() {
 
   if (toasts.length === 0) return null;
 
+  const getToastStyle = (type: string) => {
+    switch (type) {
+      case 'error':
+        return { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', accent: '#ef4444' };
+      case 'success':
+        return { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', accent: '#22c55e' };
+      default:
+        return { bg: 'rgba(91,184,245,0.12)', border: 'rgba(91,184,245,0.3)', accent: '#5BB8F5' };
+    }
+  };
+
   return (
     <div className="toast-container">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`toast toast-${toast.type}`}
-          onClick={() => removeToast(toast.id)}
-        >
-          <span className="toast-msg">{toast.message}</span>
-          <button className="toast-close">x</button>
-        </div>
-      ))}
+      {toasts.map((toast) => {
+        const s = getToastStyle(toast.type);
+        return (
+          <div
+            key={toast.id}
+            className="toast"
+            style={{
+              background: s.bg,
+              border: `1px solid ${s.border}`,
+              borderLeft: `4px solid ${s.accent}`,
+            }}
+            onClick={() => removeToast(toast.id)}
+          >
+            <span className="toast-msg">{toast.message}</span>
+            <button className="toast-close">✕</button>
+          </div>
+        );
+      })}
 
       <style>{`
         .toast-container {
@@ -28,48 +47,33 @@ export default function ToastContainer() {
           display: flex;
           flex-direction: column;
           gap: 8px;
-          max-width: 400px;
+          width: 300px;
         }
         .toast {
-          padding: 12px 16px;
-          border-radius: var(--radius);
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
+          align-items: flex-start;
+          gap: 10px;
+          border-radius: var(--radius);
+          padding: 10px 12px;
           cursor: pointer;
-          animation: slideIn 0.2s ease-out;
+          animation: slidein 300ms ease;
+          backdrop-filter: blur(8px);
+        }
+        .toast-msg {
+          flex: 1;
           font-size: 13px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          color: var(--text-primary);
+          line-height: 1.4;
         }
-        .toast-error {
-          background: #2d1418;
-          border: 1px solid var(--danger);
-          color: var(--danger);
-        }
-        .toast-success {
-          background: #142d1a;
-          border: 1px solid var(--success);
-          color: var(--success);
-        }
-        .toast-info {
-          background: #14202d;
-          border: 1px solid var(--accent);
-          color: var(--accent);
-        }
-        .toast-msg { flex: 1; }
         .toast-close {
-          background: none;
-          color: inherit;
-          padding: 2px 6px;
           font-size: 11px;
-          opacity: 0.7;
+          color: var(--text-secondary);
+          background: none;
+          padding: 0;
+          border: none;
+          cursor: pointer;
         }
-        .toast-close:hover { opacity: 1; }
-        @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
+        .toast-close:hover { color: var(--text-primary); }
       `}</style>
     </div>
   );

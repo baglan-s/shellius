@@ -15,8 +15,6 @@ export default function TabBar({ showFiles, onToggleFiles }: TabBarProps) {
   const { send } = useWS();
   const { t } = useI18n();
 
-  if (sessions.length === 0) return null;
-
   const handleClose = (id: string) => {
     send({ type: 'ssh.disconnect', session_id: id });
     removeSession(id);
@@ -42,81 +40,119 @@ export default function TabBar({ showFiles, onToggleFiles }: TabBarProps) {
                 handleClose(session.id);
               }}
             >
-              x
+              ✕
             </button>
           </div>
         ))}
       </div>
 
       {activeSession?.connected && onToggleFiles && (
-        <button
-          className={`tab-files-btn ${showFiles ? 'active' : ''}`}
-          onClick={onToggleFiles}
-          title={t('sftp.open')}
-        >
-          {t('sftp.open')}
-        </button>
+        <div className="tab-bar-right">
+          <button
+            className={`tab-files-btn ${showFiles ? 'active' : ''}`}
+            onClick={onToggleFiles}
+            title={t('sftp.open')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1" />
+              <path d="M2.5 12.5A1.5 1.5 0 0 1 4 11h16.5a1 1 0 0 1 1 1.2l-1.3 6A2 2 0 0 1 18.2 20H5.3a2 2 0 0 1-2-1.7Z" />
+            </svg>
+            Files
+          </button>
+        </div>
       )}
 
       <style>{`
         .tab-bar {
+          height: 40px;
+          flex: 0 0 40px;
           display: flex;
-          align-items: center;
+          align-items: stretch;
           background: var(--bg-secondary);
           border-bottom: 1px solid var(--border);
-          min-height: 36px;
+          padding-right: 8px;
         }
         .tab-list {
-          display: flex;
           flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: stretch;
           overflow-x: auto;
         }
         .tab {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 14px;
-          color: var(--text-secondary);
+          gap: 8px;
+          padding: 0 12px;
           cursor: pointer;
           border-right: 1px solid var(--border);
-          font-size: 13px;
-          white-space: nowrap;
+          max-width: 220px;
+          background: transparent;
         }
         .tab.active {
           background: var(--bg-primary);
-          color: var(--text-primary);
         }
         .tab-status {
           width: 6px;
           height: 6px;
           border-radius: 50%;
+          flex: 0 0 6px;
         }
         .tab-status.on { background: var(--success); }
         .tab-status.off { background: var(--danger); }
-        .tab-close {
-          background: none;
+        .tab-label {
+          font-size: 13px;
           color: var(--text-secondary);
-          padding: 2px 4px;
+          font-family: 'JetBrains Mono', monospace;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .tab.active .tab-label {
+          color: var(--text-primary);
+        }
+        .tab-close {
           font-size: 11px;
-          border-radius: 4px;
+          color: var(--text-secondary);
+          width: 16px;
+          height: 16px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 16px;
+          background: none;
+          padding: 0;
         }
         .tab-close:hover {
           background: var(--danger);
-          color: white;
+          color: #fff;
+        }
+        .tab-bar-right {
+          display: flex;
+          align-items: center;
         }
         .tab-files-btn {
-          padding: 5px 12px;
-          margin: 0 8px;
-          font-size: 11px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 26px;
+          padding: 0 10px;
+          border-radius: var(--radius-md);
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
           background: var(--bg-surface);
           color: var(--text-secondary);
-          border-radius: 4px;
-          white-space: nowrap;
+          border: none;
         }
-        .tab-files-btn:hover { color: var(--text-primary); }
+        .tab-files-btn:hover {
+          color: var(--text-primary);
+          background: var(--bg-surface-hover);
+        }
         .tab-files-btn.active {
           background: var(--accent);
-          color: var(--bg-primary);
+          color: #0d1b28;
         }
       `}</style>
     </div>

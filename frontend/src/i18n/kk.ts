@@ -91,6 +91,28 @@ export const kk = {
   'sync.lastSync': 'Соңғы синхрондау',
   'sync.notConnected': 'Бұлттық синхрондау үшін кіріңіз',
 
+  // Master Password
+  'master.setup': 'Мастер-құпия сөзді орнатыңыз',
+  'master.unlock': 'Қойманы ашыңыз',
+  'master.password': 'Мастер-құпия сөз',
+  'master.confirm': 'Құпия сөзді растаңыз',
+  'master.setupBtn': 'Құпия сөзді орнату',
+  'master.unlockBtn': 'Ашу',
+  'master.minLength': 'Құпия сөз кемінде 6 таңбадан тұруы керек',
+  'master.mismatch': 'Құпия сөздер сәйкес келмейді',
+  'master.setupHint': 'Мастер-құпия сөз барлық құпия деректерді жергілікті шифрлайды. Жоғалтқан жағдайда қалпына келтіру мүмкін емес.',
+  'master.unlockHint': 'Деректерге қол жеткізу үшін мастер-құпия сөзді енгізіңіз.',
+
+  // Host Key Verification
+  'hostVerify.new': 'Белгісіз хост',
+  'hostVerify.changed': 'Хост кілті өзгерді!',
+  'hostVerify.warning': 'ЕСКЕРТУ: Хост кілті соңғы қосылудан бері өзгерді. Бұл ортадағы адам шабуылын білдіруі мүмкін.',
+  'hostVerify.keyType': 'Кілт түрі',
+  'hostVerify.fingerprint': 'Саусақ ізі',
+  'hostVerify.oldFingerprint': 'Алдыңғы саусақ ізі',
+  'hostVerify.accept': 'Сеніп қосылу',
+  'hostVerify.reject': 'Болдырмау',
+
   // Common
   'common.cancel': 'Болдырмау',
   'common.save': 'Сақтау',

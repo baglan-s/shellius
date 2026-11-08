@@ -47,18 +47,18 @@ export default function TerminalView({ sessionId }: TerminalViewProps) {
       fontSize: 14,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
       theme: {
-        background: '#1e1e2e',
-        foreground: '#cdd6f4',
-        cursor: '#f5e0dc',
-        selectionBackground: '#585b7066',
-        black: '#45475a',
-        red: '#f38ba8',
-        green: '#a6e3a1',
-        yellow: '#f9e2af',
-        blue: '#89b4fa',
-        magenta: '#f5c2e7',
-        cyan: '#94e2d5',
-        white: '#bac2de',
+        background: '#1a1b2e',
+        foreground: '#e4e4e7',
+        cursor: '#5BB8F5',
+        selectionBackground: '#5BB8F533',
+        black: '#2a2b3d',
+        red: '#ef4444',
+        green: '#22c55e',
+        yellow: '#f59e0b',
+        blue: '#5BB8F5',
+        magenta: '#c084fc',
+        cyan: '#22d3ee',
+        white: '#e4e4e7',
       },
     });
 
@@ -119,7 +119,8 @@ export default function TerminalView({ sessionId }: TerminalViewProps) {
       style={{
         width: '100%',
         height: '100%',
-        background: '#1e1e2e',
+        background: '#1a1b2e',
+        padding: '12px 14px',
       }}
     />
   );
