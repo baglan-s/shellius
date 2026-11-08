@@ -1,6 +1,6 @@
 import { useI18n } from '../../i18n';
 
-const CLOUD_URL = 'http://localhost:8080';
+const CLOUD_URL = 'https://app.shellcat.kz';
 
 export default function OAuthButtons() {
   const { t } = useI18n();

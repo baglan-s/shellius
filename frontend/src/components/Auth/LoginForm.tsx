@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useI18n } from '../../i18n';
 import OAuthButtons from './OAuthButtons';
 
-const CLOUD_URL = 'http://localhost:8080';
+const CLOUD_URL = 'https://app.shellcat.kz';
 
 interface LoginFormProps {
   onSkip?: () => void;
