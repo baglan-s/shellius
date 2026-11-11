@@ -24,11 +24,30 @@
   --radius: 8px;
   --radius-sm: 4px;
   --radius-md: 6px;
+  --body-bg: #0f1020;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f5;
+  --bg-surface: #e8e8ec;
+  --bg-surface-hover: #dcdce0;
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-bg: rgba(37,99,235,0.10);
+  --danger: #dc2626;
+  --danger-bg: rgba(220,38,38,0.10);
+  --success: #16a34a;
+  --warning: #d97706;
+  --border: #d4d4d8;
+  --body-bg: #eaeaee;
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0f1020;
+  background: var(--body-bg, #0f1020);
   color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
@@ -53,7 +72,7 @@ button {
 
 button.primary {
   background: var(--accent);
-  color: #0d1b28;
+  color: #fff;
   font-weight: 600;
 }
 

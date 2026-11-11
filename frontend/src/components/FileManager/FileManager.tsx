@@ -22,6 +22,7 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
   const [showMkdir, setShowMkdir] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [deleteConfirmName, setDeleteConfirmName] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const { send, subscribe } = useWS();
   const { t } = useI18n();
 
@@ -117,12 +118,8 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
     });
   };
 
-  const handleUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  const uploadFile = useCallback(
+    (file: File) => {
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = btoa(
@@ -140,9 +137,48 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
         });
       };
       reader.readAsArrayBuffer(file);
+    },
+    [send, sessionId, currentPath]
+  );
+
+  const handleUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.onchange = (e) => {
+      const fileList = (e.target as HTMLInputElement).files;
+      if (!fileList) return;
+      for (let i = 0; i < fileList.length; i++) {
+        uploadFile(fileList[i]);
+      }
     };
     input.click();
   };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragging(false);
+      const fileList = e.dataTransfer.files;
+      for (let i = 0; i < fileList.length; i++) {
+        uploadFile(fileList[i]);
+      }
+    },
+    [uploadFile]
+  );
 
   return (
     <div className="file-manager">
@@ -191,7 +227,21 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
         </div>
       )}
 
-      <div className="fm-list">
+      <div
+        className={`fm-list ${dragging ? 'fm-list-dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {dragging && (
+          <div className="fm-drop-overlay">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M12 16V4" /><path d="M7 9l5-5 5 5" />
+              <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
+            </svg>
+            <span>{t('sftp.dropHere')}</span>
+          </div>
+        )}
         {loading && <div className="fm-loading">...</div>}
         {!loading && files.map((file) => (
           <div key={file.name} className="fm-item">
@@ -426,6 +476,26 @@ export default function FileManager({ sessionId, onClose }: FileManagerProps) {
           padding: 20px;
           color: var(--text-secondary);
           font-size: 13px;
+        }
+        .fm-list-dragging {
+          border: 2px dashed var(--accent);
+          border-radius: var(--radius-md);
+          position: relative;
+        }
+        .fm-drop-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(91, 184, 245, 0.08);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          z-index: 10;
+          font-size: 13px;
+          color: var(--accent);
+          font-weight: 500;
+          border-radius: var(--radius-md);
         }
       `}</style>
     </div>

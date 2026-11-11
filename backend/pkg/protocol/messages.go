@@ -49,6 +49,11 @@ const (
 	MsgMasterSetup  MessageType = "master.setup"
 	MsgMasterUnlock MessageType = "master.unlock"
 
+	// Port Forwarding
+	MsgPortForwardStart MessageType = "portforward.start"
+	MsgPortForwardStop  MessageType = "portforward.stop"
+	MsgPortForwardList  MessageType = "portforward.list"
+
 	// Sync
 	MsgSyncPush  MessageType = "sync.push"
 	MsgSyncPull  MessageType = "sync.pull"

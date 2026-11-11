@@ -5,9 +5,11 @@ import { useI18n } from '../../i18n';
 interface TabBarProps {
   showFiles?: boolean;
   onToggleFiles?: () => void;
+  showPorts?: boolean;
+  onTogglePorts?: () => void;
 }
 
-export default function TabBar({ showFiles, onToggleFiles }: TabBarProps) {
+export default function TabBar({ showFiles, onToggleFiles, showPorts, onTogglePorts }: TabBarProps) {
   const sessions = useSessionStore((s) => s.sessions);
   const activeId = useSessionStore((s) => s.activeSessionId);
   const setActive = useSessionStore((s) => s.setActive);
@@ -46,19 +48,33 @@ export default function TabBar({ showFiles, onToggleFiles }: TabBarProps) {
         ))}
       </div>
 
-      {activeSession?.connected && onToggleFiles && (
+      {activeSession?.connected && (
         <div className="tab-bar-right">
-          <button
-            className={`tab-files-btn ${showFiles ? 'active' : ''}`}
-            onClick={onToggleFiles}
-            title={t('sftp.open')}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1" />
-              <path d="M2.5 12.5A1.5 1.5 0 0 1 4 11h16.5a1 1 0 0 1 1 1.2l-1.3 6A2 2 0 0 1 18.2 20H5.3a2 2 0 0 1-2-1.7Z" />
-            </svg>
-            Files
-          </button>
+          {onTogglePorts && (
+            <button
+              className={`tab-files-btn ${showPorts ? 'active' : ''}`}
+              onClick={onTogglePorts}
+              title={t('portForward.open')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M2 12h6" /><path d="M16 12h6" /><circle cx="12" cy="12" r="4" />
+              </svg>
+              {t('portForward.open')}
+            </button>
+          )}
+          {onToggleFiles && (
+            <button
+              className={`tab-files-btn ${showFiles ? 'active' : ''}`}
+              onClick={onToggleFiles}
+              title={t('sftp.open')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1" />
+                <path d="M2.5 12.5A1.5 1.5 0 0 1 4 11h16.5a1 1 0 0 1 1 1.2l-1.3 6A2 2 0 0 1 18.2 20H5.3a2 2 0 0 1-2-1.7Z" />
+              </svg>
+              {t('sftp.open')}
+            </button>
+          )}
         </div>
       )}
 
@@ -131,6 +147,7 @@ export default function TabBar({ showFiles, onToggleFiles }: TabBarProps) {
         .tab-bar-right {
           display: flex;
           align-items: center;
+          gap: 6px;
         }
         .tab-files-btn {
           display: flex;

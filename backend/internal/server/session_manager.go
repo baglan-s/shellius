@@ -42,6 +42,9 @@ type SessionManager struct {
 
 	cloudURL  string
 	authToken string // JWT token from frontend for cloud API
+
+	portForwards   map[string]net.Listener // key: "sessionID:localPort"
+	portForwardsMu sync.Mutex
 }
 
 func NewSessionManager(db *storage.DB, cloudURL string) *SessionManager {
@@ -52,6 +55,7 @@ func NewSessionManager(db *storage.DB, cloudURL string) *SessionManager {
 		sftpHandlers:  make(map[string]*sftp.Handler),
 		pendingVerify: make(map[string]chan bool),
 		cloudURL:      cloudURL,
+		portForwards:  make(map[string]net.Listener),
 	}
 }
 
@@ -122,6 +126,13 @@ func (sm *SessionManager) HandleMessage(conn *websocket.Conn, msg *protocol.Mess
 		sm.handleVaultUpdate(conn, msg)
 	case protocol.MsgVaultDelete:
 		sm.handleVaultDelete(conn, msg)
+	// Port Forwarding
+	case protocol.MsgPortForwardStart:
+		sm.handlePortForwardStart(conn, msg)
+	case protocol.MsgPortForwardStop:
+		sm.handlePortForwardStop(conn, msg)
+	case protocol.MsgPortForwardList:
+		sm.handlePortForwardList(conn, msg)
 	// Sync
 	case protocol.MsgAuthToken:
 		sm.handleAuthToken(conn, msg)
@@ -1235,6 +1246,92 @@ func (sm *SessionManager) handleSFTPUpload(conn *websocket.Conn, msg *protocol.M
 		return
 	}
 	sendMessage(conn, &protocol.Message{Type: protocol.MsgSuccess, ID: msg.ID, SessionID: msg.SessionID})
+}
+
+// --- Port Forwarding handlers ---
+
+func (sm *SessionManager) handlePortForwardStart(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		LocalPort  int    `json:"local_port"`
+		RemoteHost string `json:"remote_host"`
+		RemotePort int    `json:"remote_port"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		sendError(conn, msg.ID, "invalid port forward data")
+		return
+	}
+
+	sm.mu.RLock()
+	client, ok := sm.clients[msg.SessionID]
+	sm.mu.RUnlock()
+	if !ok {
+		sendError(conn, msg.ID, "no active SSH session")
+		return
+	}
+
+	if payload.RemoteHost == "" {
+		payload.RemoteHost = "localhost"
+	}
+
+	listener, err := client.LocalForward(payload.LocalPort, payload.RemoteHost, payload.RemotePort)
+	if err != nil {
+		sendError(conn, msg.ID, fmt.Sprintf("port forward failed: %v", err))
+		return
+	}
+
+	key := fmt.Sprintf("%s:%d", msg.SessionID, payload.LocalPort)
+	sm.portForwardsMu.Lock()
+	sm.portForwards[key] = listener
+	sm.portForwardsMu.Unlock()
+
+	sendMessage(conn, &protocol.Message{
+		Type: protocol.MsgSuccess, ID: msg.ID,
+		Payload: map[string]interface{}{
+			"status":      "forwarding",
+			"local_port":  payload.LocalPort,
+			"remote_host": payload.RemoteHost,
+			"remote_port": payload.RemotePort,
+		},
+	})
+}
+
+func (sm *SessionManager) handlePortForwardStop(conn *websocket.Conn, msg *protocol.Message) {
+	payloadBytes, _ := json.Marshal(msg.Payload)
+	var payload struct {
+		LocalPort int `json:"local_port"`
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		sendError(conn, msg.ID, "invalid data")
+		return
+	}
+
+	key := fmt.Sprintf("%s:%d", msg.SessionID, payload.LocalPort)
+	sm.portForwardsMu.Lock()
+	if listener, ok := sm.portForwards[key]; ok {
+		listener.Close()
+		delete(sm.portForwards, key)
+	}
+	sm.portForwardsMu.Unlock()
+
+	sendMessage(conn, &protocol.Message{
+		Type: protocol.MsgSuccess, ID: msg.ID,
+		Payload: map[string]string{"status": "stopped"},
+	})
+}
+
+func (sm *SessionManager) handlePortForwardList(conn *websocket.Conn, msg *protocol.Message) {
+	sm.portForwardsMu.Lock()
+	var forwards []map[string]interface{}
+	for key := range sm.portForwards {
+		forwards = append(forwards, map[string]interface{}{"key": key})
+	}
+	sm.portForwardsMu.Unlock()
+
+	sendMessage(conn, &protocol.Message{
+		Type: protocol.MsgSuccess, ID: msg.ID,
+		Payload: map[string]interface{}{"forwards": forwards},
+	})
 }
 
 // --- Sync handlers ---

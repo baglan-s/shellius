@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n';
 import TabBar from '../Tabs/TabBar';
 import TerminalView from '../Terminal/Terminal';
 import FileManager from '../FileManager/FileManager';
+import PortForwardPanel from '../PortForward/PortForwardPanel';
 
 export default function MainArea() {
   const sessions = useSessionStore((s) => s.sessions);
@@ -14,6 +15,7 @@ export default function MainArea() {
   const { subscribe } = useWS();
   const { t } = useI18n();
   const [showFiles, setShowFiles] = useState(false);
+  const [showPorts, setShowPorts] = useState(false);
 
   useEffect(() => {
     return subscribe((msg) => {
@@ -31,12 +33,15 @@ export default function MainArea() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const filesVisible = showFiles && activeSession?.connected && activeSessionId;
+  const portsVisible = showPorts && activeSession?.connected && activeSessionId;
 
   return (
     <div className="main-area">
       <TabBar
         showFiles={showFiles}
         onToggleFiles={() => setShowFiles(!showFiles)}
+        showPorts={showPorts}
+        onTogglePorts={() => setShowPorts(!showPorts)}
       />
       <div className="terminal-wrapper">
         <div className="terminal-pane">
@@ -64,6 +69,12 @@ export default function MainArea() {
             </div>
           )}
         </div>
+        {portsVisible && activeSessionId && (
+          <PortForwardPanel
+            sessionId={activeSessionId}
+            onClose={() => setShowPorts(false)}
+          />
+        )}
         {filesVisible && activeSessionId && (
           <FileManager
             sessionId={activeSessionId}

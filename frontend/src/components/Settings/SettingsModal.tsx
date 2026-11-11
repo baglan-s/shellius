@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n';
 import { useAuthStore } from '../../stores/authStore';
+import { useThemeStore } from '../../stores/themeStore';
 import { useWS } from '../../contexts/WebSocketContext';
 import type { Locale } from '../../i18n';
 
@@ -13,7 +14,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { send, subscribe } = useWS();
   const logout = useAuthStore((s) => s.logout);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [activeSection, setActiveSection] = useState<'profile' | 'language' | 'sync'>('profile');
+  const { theme, toggle: toggleTheme } = useThemeStore();
+  const [activeSection, setActiveSection] = useState<'profile' | 'language' | 'theme' | 'sync'>('profile');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState('');
@@ -63,6 +65,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const navItems = [
     { key: 'profile' as const, label: t('settings.profile') },
     { key: 'language' as const, label: t('settings.language') },
+    { key: 'theme' as const, label: t('settings.theme') },
     { key: 'sync' as const, label: t('sync.title') },
   ];
 
@@ -160,6 +163,32 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                       )}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'theme' && (
+              <div className="settings-section">
+                <div className="settings-section-title">{t('settings.theme')}</div>
+                <div className="theme-toggle-row">
+                  <div className="theme-toggle-info">
+                    <div className="theme-toggle-label">
+                      {theme === 'dark' ? t('settings.themeDark') : t('settings.themeLight')}
+                    </div>
+                    <div className="theme-toggle-hint">{t('settings.themeHint')}</div>
+                  </div>
+                  <button className="theme-toggle-btn" onClick={toggleTheme}>
+                    {theme === 'dark' ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                        <path d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.95 7.95l-.71-.71M4.05 4.05l-.71-.71" />
+                        <circle cx="12" cy="12" r="4" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
@@ -423,6 +452,32 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           .sync-actions-wrapper { display: flex; flex-direction: column; gap: 8px; }
           .sync-result { font-size: 12px; color: var(--text-secondary); }
           .sync-push:disabled, .sync-pull:disabled { opacity: 0.5; cursor: not-allowed; }
+          .theme-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+          }
+          .theme-toggle-info { display: flex; flex-direction: column; gap: 2px; }
+          .theme-toggle-label { font-size: 14px; font-weight: 500; }
+          .theme-toggle-hint { font-size: 11px; color: var(--text-secondary); }
+          .theme-toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+          }
+          .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
         `}</style>
       </div>
     </div>

@@ -54,6 +54,20 @@ function AppContent() {
         setMasterError(p.message);
         setMasterLoading(false);
       }
+      // Auto-refresh token on 401 errors from cloud sync
+      if (msg.type === 'error' && (msg.id === 'sync-push' || msg.id === 'sync-pull')) {
+        const errMsg = (msg.payload as any)?.message || '';
+        if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
+          useAuthStore.getState().refreshAccessToken().then((ok) => {
+            if (ok) {
+              const newToken = localStorage.getItem('shellius_token');
+              if (newToken) {
+                send({ type: 'auth.token', id: 'auth-refresh', payload: { token: newToken } });
+              }
+            }
+          });
+        }
+      }
       // Host key verification
       if (msg.type === 'ssh.host_verify' && msg.id) {
         const p = msg.payload as {

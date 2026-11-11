@@ -63,6 +63,10 @@ export const ru = {
   'settings.deleteConfirm': 'Вы уверены? Это действие нельзя отменить.',
   'settings.selectLanguage': 'Выберите язык',
   'settings.close': 'Закрыть',
+  'settings.theme': 'Тема',
+  'settings.themeDark': 'Тёмная тема',
+  'settings.themeLight': 'Светлая тема',
+  'settings.themeHint': 'Переключение между тёмным и светлым оформлением',
 
   // Languages
   'lang.en': 'English',
@@ -141,6 +145,7 @@ export const ru = {
   'sftp.deleteConfirm': 'Удалить этот элемент?',
   'sftp.noSession': 'Подключитесь к серверу для просмотра файлов',
   'sftp.parentDir': 'Родительская директория',
+  'sftp.dropHere': 'Перетащите файлы для загрузки',
 
   // Vault
   'vault.add': '+ Добавить запись',
@@ -165,4 +170,16 @@ export const ru = {
   'vault.catFinance': 'Финансы',
   'vault.catWork': 'Работа',
   'vault.catDev': 'Разработка',
+
+  // Port Forwarding
+  'portForward.title': 'Проброс портов',
+  'portForward.open': 'Порты',
+  'portForward.localPort': 'Локальный',
+  'portForward.remoteHost': 'Удалённый хост',
+  'portForward.remotePort': 'Удалённый',
+  'portForward.add': 'Пробросить',
+  'portForward.stop': 'Стоп',
+  'portForward.noForwards': 'Нет активных пробросов',
+  'portForward.invalidPort': 'Порт должен быть от 1 до 65535',
+  'portForward.alreadyUsed': 'Локальный порт уже используется',
 };

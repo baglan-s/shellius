@@ -64,6 +64,27 @@ func (p *Postgres) GetUserByEmail(email string) (*User, error) {
 	return &u, nil
 }
 
+func (p *Postgres) GetUserByID(id string) (*User, error) {
+	var u User
+	err := p.conn.QueryRow(
+		`SELECT id, email, password_hash, auth_provider, created_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.AuthProvider, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (p *Postgres) UpdateEmail(userID, email string) error {
+	_, err := p.conn.Exec(`UPDATE users SET email = $1 WHERE id = $2`, email, userID)
+	return err
+}
+
+func (p *Postgres) UpdatePassword(userID, passwordHash string) error {
+	_, err := p.conn.Exec(`UPDATE users SET password_hash = $1 WHERE id = $2`, passwordHash, userID)
+	return err
+}
+
 func (p *Postgres) GetOrCreateOAuthUser(email, provider string) (*User, error) {
 	user, err := p.GetUserByEmail(email)
 	if err == nil {

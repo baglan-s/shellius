@@ -38,8 +38,13 @@ func main() {
 	mux.HandleFunc("GET /api/auth/oauth/google/callback", authHandler.OAuthGoogleCallback)
 	mux.HandleFunc("GET /api/auth/oauth/github", authHandler.OAuthGitHub)
 	mux.HandleFunc("GET /api/auth/oauth/github/callback", authHandler.OAuthGitHubCallback)
+	mux.HandleFunc("POST /api/auth/refresh", authHandler.Refresh)
+	mux.HandleFunc("POST /api/auth/forgot-password", authHandler.ForgotPassword)
+	mux.HandleFunc("POST /api/auth/reset-password", authHandler.ResetPassword)
 
 	// Protected routes
+	mux.Handle("GET /api/user/profile", authMiddleware.Wrap(http.HandlerFunc(authHandler.GetProfile)))
+	mux.Handle("PUT /api/user/profile", authMiddleware.Wrap(http.HandlerFunc(authHandler.UpdateProfile)))
 	mux.Handle("POST /api/sync/push", authMiddleware.Wrap(http.HandlerFunc(syncHandler.Push)))
 	mux.Handle("GET /api/sync/pull", authMiddleware.Wrap(http.HandlerFunc(syncHandler.Pull)))
 
@@ -50,7 +55,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: mux,
+		Handler: middleware.Logger(mux),
 	}
 
 	go func() {

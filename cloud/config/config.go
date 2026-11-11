@@ -11,6 +11,11 @@ type Config struct {
 	GitHubClientID    string
 	GitHubSecret      string
 	OAuthCallbackBase string
+	SMTPHost          string
+	SMTPPort          string
+	SMTPUser          string
+	SMTPPass          string
+	SMTPFrom          string
 }
 
 func Load() *Config {
@@ -25,6 +30,11 @@ func Load() *Config {
 		GitHubClientID:    os.Getenv("GITHUB_CLIENT_ID"),
 		GitHubSecret:      os.Getenv("GITHUB_CLIENT_SECRET"),
 		OAuthCallbackBase: getEnv("OAUTH_CALLBACK_BASE", "http://localhost:8080"),
+		SMTPHost:          os.Getenv("SMTP_HOST"),
+		SMTPPort:          getEnv("SMTP_PORT", "587"),
+		SMTPUser:          os.Getenv("SMTP_USER"),
+		SMTPPass:          os.Getenv("SMTP_PASS"),
+		SMTPFrom:          getEnv("SMTP_FROM", "noreply@shellcat.kz"),
 	}
 }
 

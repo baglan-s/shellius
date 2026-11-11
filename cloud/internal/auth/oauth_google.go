@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -58,13 +59,19 @@ func (h *Handler) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwtToken, err := h.jwt.Generate(user.ID, user.Email)
+	accessToken, err := h.jwt.Generate(user.ID, user.Email)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	// Redirect to Electron app via deep link
-	redirectURL := fmt.Sprintf("shellius://auth/callback?token=%s", jwtToken)
+	rawRefresh, hashRefresh, err := GenerateRefreshToken()
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	h.db.CreateRefreshToken(user.ID, hashRefresh, time.Now().Add(30*24*time.Hour))
+
+	redirectURL := fmt.Sprintf("shellius://auth/callback?token=%s&refresh_token=%s", accessToken, rawRefresh)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }

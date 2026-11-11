@@ -42,7 +42,7 @@ export default function LoginForm({ onSkip }: LoginFormProps) {
 
       const data = await res.json();
       localStorage.setItem('shellius_email', email);
-      login(data.token);
+      login(data.token, data.refresh_token);
     } catch {
       setError(t('auth.connectionFailed'));
     } finally {

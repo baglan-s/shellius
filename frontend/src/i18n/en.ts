@@ -63,6 +63,10 @@ export const en = {
   'settings.deleteConfirm': 'Are you sure? This action cannot be undone.',
   'settings.selectLanguage': 'Select language',
   'settings.close': 'Close',
+  'settings.theme': 'Theme',
+  'settings.themeDark': 'Dark Mode',
+  'settings.themeLight': 'Light Mode',
+  'settings.themeHint': 'Switch between dark and light appearance',
 
   // Languages
   'lang.en': 'English',
@@ -141,6 +145,7 @@ export const en = {
   'sftp.deleteConfirm': 'Delete this item?',
   'sftp.noSession': 'Connect to a server to browse files',
   'sftp.parentDir': 'Parent directory',
+  'sftp.dropHere': 'Drop files to upload',
 
   // Vault
   'vault.add': '+ Add Entry',
@@ -165,4 +170,16 @@ export const en = {
   'vault.catFinance': 'Finance',
   'vault.catWork': 'Work',
   'vault.catDev': 'Development',
+
+  // Port Forwarding
+  'portForward.title': 'Port Forwarding',
+  'portForward.open': 'Ports',
+  'portForward.localPort': 'Local',
+  'portForward.remoteHost': 'Remote host',
+  'portForward.remotePort': 'Remote',
+  'portForward.add': 'Forward',
+  'portForward.stop': 'Stop',
+  'portForward.noForwards': 'No active port forwards',
+  'portForward.invalidPort': 'Port must be between 1 and 65535',
+  'portForward.alreadyUsed': 'Local port already in use',
 };

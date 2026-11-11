@@ -63,6 +63,10 @@ export const kk = {
   'settings.deleteConfirm': 'Сенімдісіз бе? Бұл әрекетті кері қайтару мүмкін емес.',
   'settings.selectLanguage': 'Тілді таңдаңыз',
   'settings.close': 'Жабу',
+  'settings.theme': 'Тақырып',
+  'settings.themeDark': 'Қараңғы тақырып',
+  'settings.themeLight': 'Жарық тақырып',
+  'settings.themeHint': 'Қараңғы және жарық безендіру арасында ауысу',
 
   // Languages
   'lang.en': 'English',
@@ -141,6 +145,7 @@ export const kk = {
   'sftp.deleteConfirm': 'Бұл элементті жою керек пе?',
   'sftp.noSession': 'Файлдарды қарау үшін серверге қосылыңыз',
   'sftp.parentDir': 'Ата-аналық директория',
+  'sftp.dropHere': 'Файлдарды жүктеу үшін сүйреңіз',
 
   // Vault
   'vault.add': '+ Жазба қосу',
@@ -165,4 +170,16 @@ export const kk = {
   'vault.catFinance': 'Қаржы',
   'vault.catWork': 'Жұмыс',
   'vault.catDev': 'Әзірлеу',
+
+  // Port Forwarding
+  'portForward.title': 'Порт бағыттау',
+  'portForward.open': 'Порттар',
+  'portForward.localPort': 'Жергілікті',
+  'portForward.remoteHost': 'Қашықтағы хост',
+  'portForward.remotePort': 'Қашықтағы',
+  'portForward.add': 'Бағыттау',
+  'portForward.stop': 'Тоқтату',
+  'portForward.noForwards': 'Белсенді порт бағыттаулары жоқ',
+  'portForward.invalidPort': 'Порт 1-ден 65535-ке дейін болуы керек',
+  'portForward.alreadyUsed': 'Жергілікті порт қолданылуда',
 };
