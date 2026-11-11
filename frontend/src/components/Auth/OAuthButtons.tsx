@@ -1,12 +1,45 @@
 import { useI18n } from '../../i18n';
+import { useAuthStore } from '../../stores/authStore';
 
 const CLOUD_URL = 'https://app.shellcat.kz';
 
+async function openExternal(url: string) {
+  try {
+    const { open } = await import('@tauri-apps/plugin-shell');
+    await open(url);
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
 export default function OAuthButtons() {
   const { t } = useI18n();
+  const login = useAuthStore((s) => s.login);
 
   const handleOAuth = (provider: string) => {
-    window.open(`${CLOUD_URL}/api/auth/oauth/${provider}`, '_blank');
+    const state = `oauth-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    openExternal(`${CLOUD_URL}/api/auth/oauth/${provider}?state=${state}`);
+
+    // Poll for result
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      if (attempts > 120) { // 2 minutes timeout
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const res = await fetch(`${CLOUD_URL}/api/auth/oauth/poll?state=${state}`);
+        const data = await res.json();
+        if (data.status === 'ok') {
+          clearInterval(interval);
+          login(data.token, data.refresh_token);
+          localStorage.setItem('shellius_email', data.email);
+        }
+      } catch {
+        // ignore fetch errors, keep polling
+      }
+    }, 1000);
   };
 
   return (

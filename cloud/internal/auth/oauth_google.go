@@ -23,7 +23,11 @@ func (h *Handler) googleOAuthConfig() *oauth2.Config {
 
 func (h *Handler) OAuthGoogle(w http.ResponseWriter, r *http.Request) {
 	cfg := h.googleOAuthConfig()
-	url := cfg.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	state := r.URL.Query().Get("state")
+	if state == "" {
+		state = "default"
+	}
+	url := cfg.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -72,6 +76,8 @@ func (h *Handler) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	h.db.CreateRefreshToken(user.ID, hashRefresh, time.Now().Add(30*24*time.Hour))
 
-	redirectURL := fmt.Sprintf("shellcat://auth/callback?token=%s&refresh_token=%s", accessToken, rawRefresh)
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	state := r.URL.Query().Get("state")
+	h.StoreOAuthResult(state, accessToken, rawRefresh, userInfo.Email)
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, oauthSuccessHTML)
 }

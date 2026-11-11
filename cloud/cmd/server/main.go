@@ -41,6 +41,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/refresh", authHandler.Refresh)
 	mux.HandleFunc("POST /api/auth/forgot-password", authHandler.ForgotPassword)
 	mux.HandleFunc("POST /api/auth/reset-password", authHandler.ResetPassword)
+	mux.HandleFunc("GET /api/auth/oauth/poll", authHandler.OAuthPoll)
 
 	// Protected routes
 	mux.Handle("GET /api/user/profile", authMiddleware.Wrap(http.HandlerFunc(authHandler.GetProfile)))
