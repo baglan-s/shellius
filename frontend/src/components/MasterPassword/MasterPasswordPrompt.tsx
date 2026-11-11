@@ -47,7 +47,7 @@ export default function MasterPasswordPrompt({ configured, onSubmit, error, load
               <path d="M12 16.5V18" />
             </svg>
           </div>
-          <div className="master-title">Shellius</div>
+          <div className="master-title">Shellcat</div>
           <div className="master-subtitle">
             {configured ? t('master.unlock') : t('master.setup')}
           </div>

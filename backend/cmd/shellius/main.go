@@ -29,7 +29,7 @@ func main() {
 	srv := server.New(cfg, db)
 
 	go func() {
-		fmt.Printf("Shellius backend listening on :%d\n", cfg.Port)
+		fmt.Printf("Shellcat backend listening on :%d\n", cfg.Port)
 		if err := srv.Start(); err != nil {
 			log.Fatalf("server error: %v", err)
 		}

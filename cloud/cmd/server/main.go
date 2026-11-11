@@ -59,7 +59,7 @@ func main() {
 	}
 
 	go func() {
-		fmt.Printf("Shellius cloud server listening on :%d\n", cfg.Port)
+		fmt.Printf("Shellcat cloud server listening on :%d\n", cfg.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}

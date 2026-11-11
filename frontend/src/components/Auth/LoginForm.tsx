@@ -54,7 +54,7 @@ export default function LoginForm({ onSkip }: LoginFormProps) {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-title">Shellius</div>
+          <div className="auth-title">Shellcat</div>
           <div className="auth-subtitle">
             {isRegister ? t('auth.createAccount') : t('auth.signIn')}
           </div>

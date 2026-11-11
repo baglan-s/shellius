@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Shellius",
+  "productName": "Shellcat",
   "version": "0.1.0",
-  "identifier": "kz.shellcat.shellius",
+  "identifier": "kz.shellcat.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Shellius",
+        "title": "Shellcat",
         "width": 1200,
         "height": 800,
         "minWidth": 900,
@@ -36,7 +36,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "binaries/shellius-backend"
+      "binaries/shellcat-backend"
     ]
   }
 }

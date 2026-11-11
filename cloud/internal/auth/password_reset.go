@@ -48,7 +48,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Send email
 	resetURL := fmt.Sprintf("%s/reset-password?token=%s", h.cfg.OAuthCallbackBase, rawToken)
-	body := fmt.Sprintf("Subject: Shellius Password Reset\r\n"+
+	body := fmt.Sprintf("Subject: Shellcat Password Reset\r\n"+
 		"From: %s\r\n"+
 		"To: %s\r\n"+
 		"Content-Type: text/plain; charset=utf-8\r\n\r\n"+

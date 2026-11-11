@@ -194,7 +194,7 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1 className="sidebar-logo">Shellius</h1>
+        <h1 className="sidebar-logo">Shellcat</h1>
         <div className="sidebar-header-right">
           <button className="settings-gear" onClick={() => setShowSettings(true)} title={t('settings.title')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

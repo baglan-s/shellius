@@ -1,5 +1,5 @@
 {
-  "name": "shellius",
+  "name": "shellcat",
   "version": "0.1.0",
   "description": "SSH client, SFTP manager, and password vault",
   "scripts": {

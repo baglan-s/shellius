@@ -49,7 +49,7 @@ export const ru = {
   'terminal.disconnected': '--- Сессия отключена ---',
 
   // Welcome
-  'welcome.title': 'Добро пожаловать в Shellius',
+  'welcome.title': 'Добро пожаловать в Shellcat',
   'welcome.hint': 'Используйте быстрое подключение или добавьте хост',
 
   // Settings

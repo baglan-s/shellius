@@ -1,5 +1,5 @@
 [package]
-name = "shellius"
+name = "shellcat"
 version = "0.1.0"
 description = "SSH client and password vault"
 authors = ["Baglan Sariev"]

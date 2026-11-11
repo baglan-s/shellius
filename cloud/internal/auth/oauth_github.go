@@ -84,6 +84,6 @@ func (h *Handler) OAuthGitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	h.db.CreateRefreshToken(user.ID, hashRefresh, time.Now().Add(30*24*time.Hour))
 
-	redirectURL := fmt.Sprintf("shellius://auth/callback?token=%s&refresh_token=%s", accessToken, rawRefresh)
+	redirectURL := fmt.Sprintf("shellcat://auth/callback?token=%s&refresh_token=%s", accessToken, rawRefresh)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }

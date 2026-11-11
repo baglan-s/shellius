@@ -49,7 +49,7 @@ export const en = {
   'terminal.disconnected': '--- Session disconnected ---',
 
   // Welcome
-  'welcome.title': 'Welcome to Shellius',
+  'welcome.title': 'Welcome to Shellcat',
   'welcome.hint': 'Use Quick Connect or add a host to get started',
 
   // Settings

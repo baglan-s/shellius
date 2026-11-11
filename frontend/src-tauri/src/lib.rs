@@ -14,7 +14,7 @@ pub fn run() {
             }
 
             // Start Go backend as sidecar
-            let sidecar = app.shell().sidecar("shellius-backend").unwrap();
+            let sidecar = app.shell().sidecar("shellcat-backend").unwrap();
             let (mut _rx, _child) = sidecar.spawn().expect("Failed to start backend sidecar");
 
             Ok(())

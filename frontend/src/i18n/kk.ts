@@ -49,7 +49,7 @@ export const kk = {
   'terminal.disconnected': '--- Сессия ажыратылды ---',
 
   // Welcome
-  'welcome.title': 'Shellius-қа қош келдіңіз',
+  'welcome.title': 'Shellcat-қа қош келдіңіз',
   'welcome.hint': 'Жылдам қосылуды пайдаланыңыз немесе хост қосыңыз',
 
   // Settings
