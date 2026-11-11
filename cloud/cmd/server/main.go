@@ -56,7 +56,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: middleware.Logger(mux),
+		Handler: middleware.CORS(middleware.Logger(mux)),
 	}
 
 	go func() {
