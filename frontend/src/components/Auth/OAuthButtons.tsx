@@ -1,3 +1,4 @@
+import { open } from '@tauri-apps/plugin-shell';
 import { useI18n } from '../../i18n';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -5,7 +6,6 @@ const CLOUD_URL = 'https://app.shellcat.kz';
 
 async function openExternal(url: string) {
   try {
-    const { open } = await import('@tauri-apps/plugin-shell');
     await open(url);
   } catch {
     window.open(url, '_blank');
